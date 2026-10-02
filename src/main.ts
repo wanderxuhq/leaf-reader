@@ -1,113 +1,142 @@
-import {
-	Editor,
-	MarkdownView,
-	MarkdownFileInfo,
-	Modal,
-	Notice,
-	Plugin,
-} from 'obsidian';
-import {
-	DEFAULT_SETTINGS,
-	MyPluginSettings,
-	SampleSettingTab,
-} from './settings';
+import { normalizeSettings } from './epub-viewer/settings';
+import { App, Modal, Notice, Plugin, TFile } from 'obsidian';
+import { EpubPluginSettings, EpubSettingTab } from "./settings";
+import { EpubView, EPUB_VIEW_TYPE } from "./epub-viewer/epub-view";
+import { parseLBP } from "./epub-viewer/lbp";
 
-// Remember to rename these classes and interfaces!
+export default class EpubReaderPlugin extends Plugin {
+	settings: EpubPluginSettings;
 
-export default class MyPlugin extends Plugin {
-	settings!: MyPluginSettings;
-
-	async onload() {
+	async onload(): Promise<void> {
 		await this.loadSettings();
 
-		// This creates an icon in the left ribbon.
-		this.addRibbonIcon('dice', 'Sample', (_evt: MouseEvent) => {
-			// Called when the user clicks the icon.
-			new Notice('This is a notice!');
-		});
+		this.registerView(EPUB_VIEW_TYPE, (leaf) => new EpubView(leaf, {
+      get: () => this.settings,
+      save: async settings => { this.settings = settings; await this.saveSettings(); },
+    }));
+		this.registerExtensions(['epub'], EPUB_VIEW_TYPE);
 
-		// This adds a status bar item to the bottom of the app. Does not work on mobile apps.
-		const statusBarItemEl = this.addStatusBarItem();
-		statusBarItemEl.setText('Status bar text');
-
-		// This adds a simple command that can be triggered anywhere
 		this.addCommand({
-			id: 'open-modal-simple',
-			name: 'Open modal (simple)',
+			id: 'open-epub',
+			name: 'Open epub file',
 			callback: () => {
-				new SampleModal(this.app).open();
-			},
-		});
-		// This adds an editor command that can perform some operation on the current editor instance
-		this.addCommand({
-			id: 'replace-selected',
-			name: 'Replace selected content',
-			editorCallback: (
-				editor: Editor,
-				_ctx: MarkdownView | MarkdownFileInfo,
-			) => {
-				editor.replaceSelection('Sample editor command');
-			},
-		});
-		// This adds a complex command that can check whether the current state of the app allows execution of the command
-		this.addCommand({
-			id: 'open-modal-complex',
-			name: 'Open modal (complex)',
-			checkCallback: (checking: boolean) => {
-				// Conditions to check
-				const markdownView =
-					this.app.workspace.getActiveViewOfType(MarkdownView);
-				if (markdownView) {
-					// If checking is true, we're simply "checking" if the command can be run.
-					// If checking is false, then we want to actually perform the operation.
-					if (!checking) {
-						new SampleModal(this.app).open();
-					}
-
-					// This command will only show up in Command Palette when the check function returns true
-					return true;
-				}
-				return false;
+				void this.openEpubFile();
 			},
 		});
 
-		// This adds a settings tab so the user can configure various aspects of the plugin
-		this.addSettingTab(new SampleSettingTab(this.app, this));
-
-		// If the plugin hooks up any global DOM events (on parts of the app that doesn't belong to this plugin)
-		// Using this function will automatically remove the event listener when this plugin is disabled.
-		this.registerDomEvent(activeDocument, 'click', (_evt: MouseEvent) => {
-			new Notice('Click');
+		this.registerObsidianProtocolHandler('epub-ref', (params) => {
+			void this.handleEpubRefLink(params);
 		});
 
-		// When registering intervals, this function will automatically clear the interval when the plugin is disabled.
-		this.registerInterval(
-			window.setInterval(() => console.log('setInterval'), 5 * 60 * 1000),
-		);
+		this.addSettingTab(new EpubSettingTab(this.app, this));
 	}
 
-	onunload() {}
-
-	async loadSettings() {
-		this.settings = Object.assign(
-			{},
-			DEFAULT_SETTINGS,
-			(await this.loadData()) as Partial<MyPluginSettings>,
-		);
+	onunload(): void {
 	}
 
-	async saveSettings() {
+	async loadSettings(): Promise<void> {
+		const data = (await this.loadData()) as Partial<EpubPluginSettings>;
+		this.settings = normalizeSettings(data);
+	}
+
+	async saveSettings(): Promise<void> {
 		await this.saveData(this.settings);
+	}
+
+	async openEpubFile(): Promise<void> {
+		const epubFiles = this.app.vault.getFiles().filter(file => file.extension === 'epub');
+
+		if (epubFiles.length === 0) {
+			new Notice('No epub files found in vault');
+			return;
+		}
+
+		if (epubFiles.length === 1) {
+			const file = epubFiles[0];
+			if (file) {
+				const leaf = this.app.workspace.getLeaf(true);
+				await leaf.openFile(file);
+			}
+			return;
+		}
+
+		const files = epubFiles.map(f => ({ path: f.path, name: f.name }));
+		// eslint-disable-next-line @typescript-eslint/no-misused-promises
+		new EpubFileSelectorModal(this.app, files, async (filePath) => {
+			const leaf = this.app.workspace.getLeaf(true);
+			const file = this.app.vault.getAbstractFileByPath(filePath);
+			if (file instanceof TFile) {
+				await leaf.openFile(file);
+			}
+		}).open();
+	}
+
+	async handleEpubRefLink(params: Record<string, string>): Promise<void> {
+		try {
+			const lbpData = params.data;
+			if (!lbpData) {
+				new Notice('Invalid epub-ref link: missing data parameter');
+				return;
+			}
+
+			const lbpRange = parseLBP(lbpData);
+			if (!lbpRange) {
+				new Notice('Invalid lbp format');
+				return;
+			}
+
+			const filePath = lbpRange.bookId;
+			const epubFile = this.app.vault.getAbstractFileByPath(filePath);
+			if (!epubFile || !(epubFile instanceof TFile)) {
+				new Notice(`Epub file not found: ${filePath}`);
+				return;
+			}
+
+			const leaf = this.app.workspace.getLeaf(true);
+			await leaf.setViewState({
+				type: EPUB_VIEW_TYPE,
+				state: { file: filePath, lbp: lbpData },
+			});
+			await this.app.workspace.revealLeaf(leaf);
+		} catch (error) {
+			console.error('[EpubPlugin] Error handling epub-ref link:', error);
+			new Notice('Failed to open epub link');
+		}
 	}
 }
 
-class SampleModal extends Modal {
-	onOpen() {
-		const { contentEl } = this;
-		contentEl.setText('Woah!');
+/**
+ * Modal for selecting an EPUB file from the vault
+ */
+class EpubFileSelectorModal extends Modal {
+	private files: Array<{ path: string; name: string }>;
+	private onSelect: (filePath: string) => void;
+
+	constructor(app: App, files: Array<{ path: string; name: string }>, onSelect: (filePath: string) => void) {
+		super(app);
+		this.files = files;
+		this.onSelect = onSelect;
 	}
 
-	onClose() {
+	onOpen(): void {
+		const { contentEl } = this;
+		contentEl.empty();
+
+		contentEl.createEl('h2', { text: 'Select epub file' });
+
+		const fileList = contentEl.createDiv({ cls: 'epub-file-list' });
+
+		for (const file of this.files) {
+			const fileItem = fileList.createDiv({ cls: 'epub-file-item' });
+			fileItem.createEl('span', { text: file.name });
+			fileItem.addEventListener('click', () => {
+				this.onSelect(file.path);
+				this.close();
+			});
+		}
+	}
+
+	onClose(): void {
 		const { contentEl } = this;
 		contentEl.empty();
 	}

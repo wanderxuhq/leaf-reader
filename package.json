@@ -1,27 +1,38 @@
 {
-	"name": "obsidian-sample-plugin",
-	"version": "1.0.0",
-	"description": "This is a sample plugin for Obsidian (https://obsidian.md)",
-	"main": "main.js",
-	"type": "module",
-	"scripts": {
-		"dev": "node esbuild.config.mjs",
-		"build": "tsc -noEmit -skipLibCheck && node esbuild.config.mjs production",
-		"version": "node version-bump.mjs && git add manifest.json versions.json",
-		"lint": "eslint ."
-	},
-	"keywords": [],
-	"license": "0-BSD",
-	"devDependencies": {
-		"@eslint/js": "^9.39.4",
-		"@types/node": "^22.15.17",
-		"esbuild": "0.25.5",
-		"eslint": "^9.39.4",
-		"eslint-plugin-obsidianmd": "^0.4.0",
-		"globals": "^17.6.0",
-		"jiti": "^2.6.1",
-		"obsidian": "latest",
-		"typescript": "^5.8.3",
-		"typescript-eslint": "^8.59.1"
-	}
+  "name": "obsidian-leaf-reader",
+  "version": "1.0.0",
+  "description": "An EPUB reader that turns highlights and annotations into linked Markdown notes.",
+  "main": "main.js",
+  "type": "module",
+  "scripts": {
+    "dev": "node esbuild.config.mjs",
+    "build": "node esbuild.config.mjs production",
+    "version": "node version-bump.mjs && git add manifest.json versions.json",
+    "lint": "eslint src",
+    "typecheck": "tsc --noEmit",
+    "test": "node tests/view-restoration.mjs && node tests/browser-tests.mjs"
+  },
+  "keywords": [],
+  "license": "MIT",
+  "devDependencies": {
+    "@eslint/js": "9.30.1",
+    "@playwright/test": "^1.63.0",
+    "@types/node": "^16.11.6",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "esbuild": "0.25.5",
+    "eslint-plugin-obsidianmd": "0.1.9",
+    "globals": "14.0.0",
+    "jiti": "2.6.1",
+    "tslib": "2.4.0",
+    "typescript": "^5.8.3",
+    "typescript-eslint": "8.35.1"
+  },
+  "dependencies": {
+    "babel-preset-solid": "^1.9.12",
+    "esbuild-plugin-solid": "^0.6.0",
+    "fflate": "^0.8.2",
+    "obsidian": "latest",
+    "solid-js": "^1.9.12"
+  }
 }

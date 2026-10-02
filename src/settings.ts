@@ -1,38 +1,36 @@
-import { App, PluginSettingTab, Setting } from 'obsidian';
-import MyPlugin from './main';
+import {App, PluginSettingTab, Setting} from "obsidian";
+import EpubReaderPlugin from "./main";
+import { ViewMode } from "./epub-viewer/types";
 
-export interface MyPluginSettings {
-	mySetting: string;
-}
+export { DEFAULT_SETTINGS } from './epub-viewer/settings';
+export type { ReaderSettings as EpubPluginSettings } from './epub-viewer/settings';
 
-export const DEFAULT_SETTINGS: MyPluginSettings = {
-	mySetting: 'default',
-};
+export class EpubSettingTab extends PluginSettingTab {
+	plugin: EpubReaderPlugin;
 
-export class SampleSettingTab extends PluginSettingTab {
-	plugin: MyPlugin;
-
-	constructor(app: App, plugin: MyPlugin) {
+	constructor(app: App, plugin: EpubReaderPlugin) {
 		super(app, plugin);
 		this.plugin = plugin;
 	}
 
 	display(): void {
-		const { containerEl } = this;
+		const {containerEl} = this;
 
 		containerEl.empty();
 
+		new Setting(containerEl).setName('Reading').setHeading();
+
 		new Setting(containerEl)
-			.setName('Settings #1')
-			.setDesc("It's a secret")
-			.addText((text) =>
-				text
-					.setPlaceholder('Enter your secret')
-					.setValue(this.plugin.settings.mySetting)
-					.onChange(async (value) => {
-						this.plugin.settings.mySetting = value;
-						await this.plugin.saveSettings();
-					}),
-			);
+			.setName('Default reading mode')
+			.setDesc('Read one chapter at a time or scroll continuously')
+			.addDropdown(dropdown => dropdown
+				.addOption(ViewMode.PAGINATED, 'Single chapter')
+				.addOption(ViewMode.SCROLL, 'Continuous scroll')
+				.setValue(this.plugin.settings.viewMode)
+				.onChange(async (value) => {
+					this.plugin.settings.viewMode = value as ViewMode;
+					await this.plugin.saveSettings();
+				}));
+
 	}
 }
