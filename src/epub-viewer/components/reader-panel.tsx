@@ -2,16 +2,16 @@ import { Show, createUniqueId, createEffect, onMount, onCleanup, type JSX } from
 import { IconButton } from './icon-button';
 
 /** Mounted only while open. Keeps focus and dismissal inside this reader. */
-export function ReaderPanel(props: { title: string; subtitle?: string; kind: 'toc' | 'settings'; modal: boolean; onClose: () => void; children: JSX.Element }) {
+export function ReaderPanel(props: { title: string; subtitle?: string; kind: 'toc' | 'settings' | 'footnote'; style?: JSX.CSSProperties; modal: boolean; onClose: () => void; children: JSX.Element }) {
   const titleId = createUniqueId();
   let panel!: HTMLElement;
   let opener: HTMLElement | null = null;
   onMount(() => { opener = panel.ownerDocument.activeElement as HTMLElement | null; });
-  createEffect(() => { if (props.modal) panel.querySelector<HTMLButtonElement>('.epub-panel-close')?.focus({ preventScroll: true }); });
+  createEffect(() => { if (props.modal || props.kind === 'footnote') panel.querySelector<HTMLButtonElement>('.epub-panel-close')?.focus({ preventScroll: true }); });
   onMount(() => {
     const outside = (event: PointerEvent) => {
       const target = event.target as Element;
-      if (!props.modal && props.kind === 'settings' && !panel.contains(target) && !target.closest('.epub-header')) props.onClose();
+      if (!props.modal && props.kind !== 'toc' && !panel.contains(target) && (props.kind === 'footnote' || !target.closest('.epub-header'))) props.onClose();
     };
     panel.ownerDocument.addEventListener('pointerdown', outside);
     onCleanup(() => panel.ownerDocument.removeEventListener('pointerdown', outside));
@@ -30,7 +30,7 @@ export function ReaderPanel(props: { title: string; subtitle?: string; kind: 'to
   };
   return <div class="epub-panel-layer" classList={{ 'is-modal': props.modal }}>
     <div class="epub-panel-backdrop" onClick={props.onClose} aria-hidden="true" />
-    <section ref={panel} class={'epub-reader-panel epub-reader-panel-' + props.kind} role="dialog" aria-modal={props.modal ? true : undefined} aria-labelledby={titleId} onKeyDown={keydown}>
+    <section ref={panel} class={'epub-reader-panel epub-reader-panel-' + props.kind} style={props.style} role="dialog" aria-modal={props.modal ? true : undefined} aria-labelledby={titleId} onKeyDown={keydown}>
       <header class="epub-panel-heading">
         <div><h2 id={titleId}>{props.title}</h2><Show when={props.subtitle}><p>{props.subtitle}</p></Show></div>
         <IconButton name="x" ariaLabel={'关闭' + props.title} class="epub-panel-close" onClick={props.onClose} />

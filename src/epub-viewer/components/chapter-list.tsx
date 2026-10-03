@@ -1,3 +1,5 @@
+import { FootnoteLoader, type Footnote } from '../footnotes';
+import { captureReadingPosition } from '../position';
 import { getTextNodes } from '../dom-utils';
 import { createSignal, createMemo, createEffect, untrack, For, Show, onCleanup } from 'solid-js';
 import type { App, TFile } from 'obsidian';
@@ -11,10 +13,13 @@ import { useSelection } from '../primitives/use-selection';
 import { useScrollTracker } from '../primitives/use-scroll-tracker';
 import { useNavigation } from '../primitives/use-navigation';
 import { useSearchHighlight } from '../primitives/use-search-highlight';
-export interface ChapterListProps { store: ReaderStore; app: App; file: TFile; }
+export interface ChapterListProps { store: ReaderStore; app: App; file: TFile; onFootnote?: (note: Footnote) => void; }
 export function ChapterList(props: ChapterListProps) {
   const store = props.store;
   const loader = new ChapterLoader(store.state);
+  const footnotes = new FootnoteLoader(store.state);
+  let linkRequest = 0;
+  onCleanup(() => { ++linkRequest; footnotes.dispose(); });
   onCleanup(() => loader.dispose());
   const [container,setContainer] = createSignal<HTMLDivElement>();
   const [revision,setRevision] = createSignal(0);
@@ -25,6 +30,8 @@ export function ChapterList(props: ChapterListProps) {
   useHighlights(() => notes() ?? [],container,showNotePopup,decorations);
   useSearchHighlight(container,store,decorations);
   const navigating = useNavigation(container,store,revision);
+  store.setPositionCapture(() => navigating() ? null : container() ? captureReadingPosition(container()!, store.state.bookId) : null);
+  onCleanup(() => store.setPositionCapture());
   useScrollTracker(container,store,navigating);
   createEffect(() => {
     const el = container(); if (!el) return;
@@ -79,7 +86,15 @@ export function ChapterList(props: ChapterListProps) {
   });
   const linkClick = (event: MouseEvent) => {
     const anchor = (event.target as Element).closest<HTMLAnchorElement>('a[data-epub-href]');
-    if (!anchor) return; event.preventDefault(); store.navigateToHref(anchor.dataset.epubHref!);
+    if (!anchor) return; event.preventDefault();
+    const request = ++linkRequest, navigation = store.state.navigation.id;
+    void footnotes.read(anchor).then(note => {
+      if (request !== linkRequest || navigation !== store.state.navigation.id || !anchor.isConnected) return;
+      if (note && props.onFootnote) props.onFootnote(note); else store.navigateToHref(anchor.dataset.epubHref!);
+    }).catch(error => {
+      console.error('Failed to read footnote', error);
+      if (request === linkRequest && navigation === store.state.navigation.id && anchor.isConnected) store.navigateToHref(anchor.dataset.epubHref!);
+    });
   };
   return <div ref={setContainer} class="epub-reading-viewport" onClick={linkClick}>
     <div class="epub-chapter-container">

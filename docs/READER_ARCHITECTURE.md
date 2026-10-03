@@ -19,6 +19,12 @@ note-format.ts 定义 Markdown 块；note-repository.ts 负责书籍路径关联
 
 search-logic.ts 与正文渲染共享 HTML 清理规则，保留原文空白及实体解码后的字符偏移。搜索结果导航先加载章节，再定位并绘制跨 Text 节点的高亮。
 
+## 阅读工具
+
+- notes-view.ts 是基于 Markdown 文件的 FileView，不注册或覆盖 md 扩展名。notes-opening.ts 监听当前文件打开和激活事件，确认实际 frontmatter 后自动切换笔记视图；异步读取过期时不切换。Markdown 按钮将同一个 leaf 切回编辑器，并记住该标签页对此文件的编辑选择，避免自动跳回。命令和文件菜单仍可显式切换。视图仅读取当前文件，以实际 frontmatter 的 epub-target 和每条笔记的 LBP 校验所属书籍，事件刷新与异步任务随文件卸载和视图关闭清理。
+- epub-store.ts 区分内部定位 navigate 和主动跳转 jump。跳转前立即捕获并复制 LBP，返回/前进各保留至多 80 个位置；滚动、翻页和布局恢复不会新增历史。
+- footnotes.ts 只识别 noteref、footnote/endnote 和对应 ARIA 角色，支持阅读顺序之外的尾注文件。浮窗使用独立清理过的内容，不修改正文 DOM 或 LBP 索引；资源随阅读页关闭释放。
+
 ## 验证
 
 npm test 使用合成 EPUB 在真实浏览器中贯通核心流程。测试替身替代 Obsidian API，因此不构成 Obsidian 宿主实测。附加真实 EPUB 路径只读验证书籍解析和章节显示。

@@ -1,3 +1,4 @@
+import { readingTools } from './reading-tools.mjs';
 import { mobilePanels } from './mobile-panels.mjs';
 import { reviewRegressions } from './review-regressions.mjs';
 
@@ -105,6 +106,7 @@ try {
  assert.equal(await page.getByRole('button',{name:'Next page',exact:true}).isVisible(),true);
  console.log('PASS: literal search and chapter CSS isolation');
  await reviewRegressions(browser, 'http://127.0.0.1:'+server.address().port);
+ await readingTools(browser, 'http://127.0.0.1:'+server.address().port);
  await mobilePanels(browser, 'http://127.0.0.1:'+server.address().port);
  for(let index=0;index<realBooks.length;index++) {
    await page.evaluate(async ({index,name})=>{const bytes=new Uint8Array(await (await fetch('/book/'+index)).arrayBuffer());await readerTest.openReal(Array.from(bytes),name);},{index,name:path.basename(realBooks[index])});

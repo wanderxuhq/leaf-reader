@@ -89,6 +89,7 @@ export async function reviewRegressions(browser, url) {
         }
       }
       if (!candidate) throw Error('No visible selection fixture');
+      readerTest.dismissRange = candidate.cloneRange();
       getSelection().removeAllRanges(); getSelection().addRange(candidate);
       return { text: getSelection().toString(), bottom: candidate.getBoundingClientRect().bottom };
     });
@@ -101,11 +102,28 @@ export async function reviewRegressions(browser, url) {
     assert.ok(placement.top >= placement.viewportTop);
     assert.ok(placement.bottom <= placement.viewportBottom);
     assert.ok(placement.bottom < selection.bottom);
+    await page.locator('.epub-reading-viewport').click({ position: { x: 3, y: 3 } });
+    await page.waitForTimeout(180);
+    assert.equal(await page.locator('.global-note-button-container').count(), 0);
+    await page.evaluate(() => { getSelection().removeAllRanges(); getSelection().addRange(readerTest.dismissRange); });
     await page.getByRole('button', { name: '划线', exact: true }).click();
     await page.waitForFunction(() => readerTest.text.size > 0);
     assert.equal(await page.evaluate(async () => (await readerTest.loadNotes(readerTest.app, readerTest.book.path))[0].selectedText), selection.text);
     console.log('PASS: bottom-of-viewport selection toolbar stays visible and saves the selected text');
     await page.evaluate(() => getSelection().removeAllRanges());
+    await page.locator('.epub-note-highlight').first().click();
+    await page.locator('.epub-note-popup').waitFor();
+    assert.equal(await page.locator('.epub-note-popup p').count(), 0);
+    assert.equal(await page.locator('.epub-note-popup button').count(), 0);
+    assert.equal(await page.locator('.epub-note-popup blockquote').evaluate(el => getComputedStyle(el).marginLeft), '0px');
+    assert.equal(await page.getByText('已划线', { exact: true }).count(), 0);
+    await page.locator('.epub-note-popup blockquote').dispatchEvent('pointerdown', { bubbles: true });
+    assert.equal(await page.locator('.epub-note-popup').count(), 1);
+    await page.locator('.epub-reading-viewport').click({ position: { x: 3, y: 3 } });
+    await page.waitForTimeout(180);
+    assert.equal(await page.locator('.epub-note-popup').count(), 0);
+    assert.equal(await page.locator('.global-note-button-container').count(), 0);
+    console.log('PASS: blank-area dismissal closes selection and highlight overlays without reopening them');
 
     // The following chapter remains readable after one spine entry fails.
     await page.evaluate(() => {

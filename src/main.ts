@@ -1,7 +1,9 @@
+import { BookNotesView, NOTES_VIEW_TYPE } from './epub-viewer/notes-view';
+import { openBookNotes, registerNotesOpening } from './epub-viewer/notes-opening';
 import { normalizeSettings } from './epub-viewer/settings';
 import { App, Modal, Notice, Plugin, TFile } from 'obsidian';
 import { EpubPluginSettings, EpubSettingTab } from "./settings";
-import { EpubView, EPUB_VIEW_TYPE } from "./epub-viewer/epub-view";
+import { EpubView, EPUB_VIEW_TYPE, openEpubInView } from "./epub-viewer/epub-view";
 import { parseLBP } from "./epub-viewer/lbp";
 
 export default class EpubReaderPlugin extends Plugin {
@@ -13,7 +15,10 @@ export default class EpubReaderPlugin extends Plugin {
 		this.registerView(EPUB_VIEW_TYPE, (leaf) => new EpubView(leaf, {
       get: () => this.settings,
       save: async settings => { this.settings = settings; await this.saveSettings(); },
+      openNotes: state => openBookNotes(this.app, state),
     }));
+    this.registerView(NOTES_VIEW_TYPE, leaf => new BookNotesView(leaf));
+    registerNotesOpening(this);
 		this.registerExtensions(['epub'], EPUB_VIEW_TYPE);
 
 		this.addCommand({
@@ -91,12 +96,7 @@ export default class EpubReaderPlugin extends Plugin {
 				return;
 			}
 
-			const leaf = this.app.workspace.getLeaf(true);
-			await leaf.setViewState({
-				type: EPUB_VIEW_TYPE,
-				state: { file: filePath, lbp: lbpData },
-			});
-			await this.app.workspace.revealLeaf(leaf);
+			await openEpubInView(this.app, filePath, lbpRange);
 		} catch (error) {
 			console.error('[EpubPlugin] Error handling epub-ref link:', error);
 			new Notice('Failed to open epub link');

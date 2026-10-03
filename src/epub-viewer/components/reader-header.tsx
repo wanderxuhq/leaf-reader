@@ -1,9 +1,10 @@
+import { HistoryControl } from './history-control';
 /**
  * Reader Header Component
  * Contains navigation, search, and settings controls
  */
 
-import { createMemo } from 'solid-js';
+import { createMemo, Show } from 'solid-js';
 import type { ReaderStore } from '../epub-store';
 import { Direction } from '../types';
 import { IconButton } from './icon-button';
@@ -11,6 +12,7 @@ import { SearchInput } from '../search-component';
 
 export interface ReaderHeaderProps {
 	store: ReaderStore;
+  onOpenNotes?: () => void;
 	onSearch: () => void;
 	onSearchNavigate: (direction: Direction) => void;
 	onNavigatePrevious: () => void;
@@ -58,6 +60,7 @@ export function ReaderHeader(props: ReaderHeaderProps) {
           expanded={props.store.state.sidebarVisible}
 					onClick={() => props.store.toggleSidebar()}
 				/>
+			<HistoryControl store={props.store} />
 			</div>
 			{props.store.state.searchVisible ? (
 				<div class="epub-header-search-area">
@@ -91,6 +94,7 @@ export function ReaderHeader(props: ReaderHeaderProps) {
 				</div>
 			)}
 			<div class="epub-header-right">
+        <Show when={!props.store.state.searchVisible}><IconButton name="notebook-pen" ariaLabel="读书笔记" onClick={() => props.onOpenNotes?.()} /></Show>
 				{props.store.state.searchVisible && (
 					<>
 						<IconButton
@@ -117,12 +121,12 @@ export function ReaderHeader(props: ReaderHeaderProps) {
 					ariaLabel={props.store.state.searchVisible ? "Close search" : "Search"}
 					onClick={() => props.store.toggleSearch()}
 				/>
-				<IconButton
+				<Show when={!props.store.state.searchVisible}><IconButton
 					name="settings"
 					ariaLabel="Settings"
           expanded={props.store.state.settingsVisible}
 					onClick={() => props.store.toggleSettings()}
-				/>
+				/></Show>
 			</div>
 		</div>
 	);

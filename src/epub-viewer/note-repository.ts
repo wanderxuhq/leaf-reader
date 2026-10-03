@@ -1,21 +1,27 @@
 import { TFile, parseYaml, type App } from 'obsidian';
 import { formatNote, parseNotes, type NoteEntry, type NoteHighlightEntry } from './note-format';
-function target(content: string): unknown {
+export function noteTarget(content: string): string | null {
   const frontmatter = /^---\r?\n([\s\S]*?)\r?\n---(?:\r?\n|$)/.exec(content);
   if (!frontmatter) return null;
-  try { return (parseYaml(frontmatter[1]!) as Record<string,unknown> | null)?.['epub-target']; } catch { return null; }
+  try { const value = (parseYaml(frontmatter[1]!) as Record<string,unknown> | null)?.['epub-target']; return typeof value === 'string' && /\.epub$/i.test(value) ? value : null; } catch { return null; }
 }
 export async function findNoteFiles(app: App, bookId: string): Promise<TFile[]> {
   const files = app.vault.getMarkdownFiles().filter(file => app.metadataCache.getFileCache(file)?.frontmatter?.['epub-target'] === bookId);
   const defaultPath = bookId.replace(/\.epub$/i, '') + '.notes.md';
   const adjacent = app.vault.getAbstractFileByPath(defaultPath);
-  if (adjacent instanceof TFile && !files.some(f => f.path === adjacent.path) && target(await app.vault.read(adjacent)) === bookId) files.push(adjacent);
+  if (adjacent instanceof TFile && !files.some(f => f.path === adjacent.path) && noteTarget(await app.vault.read(adjacent)) === bookId) files.push(adjacent);
   return files.sort((a,b) => a.path.localeCompare(b.path));
 }
-export async function loadNotes(app: App, bookId: string): Promise<NoteHighlightEntry[]> {
+export interface NoteRecord extends NoteHighlightEntry { sourcePath: string; }
+export async function loadNotes(app: App, bookId: string): Promise<NoteRecord[]> {
   const files = await findNoteFiles(app, bookId);
-  const notes: NoteHighlightEntry[] = [];
-  for (const file of files) notes.push(...parseNotes(await app.vault.read(file), bookId));
+  const notes: NoteRecord[] = [];
+  for (const file of files) {
+    const content = await app.vault.read(file);
+    // Metadata can lag behind an edit; the file itself is the final authority.
+    if (noteTarget(content) !== bookId) continue;
+    notes.push(...parseNotes(content, bookId).map(note => ({ ...note, sourcePath: file.path })));
+  }
   return notes;
 }
 const pending = new WeakMap<App, Map<string, Promise<TFile>>>();

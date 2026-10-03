@@ -10,7 +10,7 @@ export function useSelection(app: App, file: TFile, containerRef: Accessor<HTMLE
     const origin = container.getBoundingClientRect();
     el.classList.add('epub-floating-note');
     // Measure in the viewport before positioning, including long note popups.
-    el.style.maxWidth = Math.max(0, container.clientWidth - 16) + 'px';
+    el.style.maxWidth = Math.min(el === popup ? 360 : Infinity, Math.max(0, container.clientWidth - 16)) + 'px';
     el.style.maxHeight = Math.max(0, container.clientHeight - 16) + 'px';
     el.style.left = container.scrollLeft + 'px';
     el.style.top = container.scrollTop + 'px';
@@ -30,6 +30,7 @@ export function useSelection(app: App, file: TFile, containerRef: Accessor<HTMLE
     const ownerWindow = doc.defaultView ?? window;
     let timer: number | undefined;
     const inspect = () => {
+      if (popup) return;
       const selection = doc.getSelection();
       if (!selection || selection.isCollapsed || !selection.rangeCount) { toolbar?.remove(); toolbar = undefined; return; }
       const range = selection.getRangeAt(0);
@@ -46,18 +47,33 @@ export function useSelection(app: App, file: TFile, containerRef: Accessor<HTMLE
       button('笔记', () => handleAddNote(app,file.path,text,serialized,refetchNotes));
       place(toolbar, rect, container);
     };
-    const schedule = () => { ownerWindow.clearTimeout(timer); timer = ownerWindow.setTimeout(inspect, 80); };
+    const schedule = (event: Event) => {
+      if (event.type === 'pointerup' && (toolbar?.contains(event.target as Node) || popup?.contains(event.target as Node))) return;
+      ownerWindow.clearTimeout(timer); timer = ownerWindow.setTimeout(inspect, 80);
+    };
+    const outside = (event: PointerEvent) => {
+      const target = event.target as Node;
+      if (toolbar?.contains(target) || popup?.contains(target)) return;
+      ownerWindow.clearTimeout(timer);
+      const hadToolbar = !!toolbar;
+      close();
+      const selection = doc.getSelection();
+      if (hadToolbar && selection?.anchorNode && container.contains(selection.anchorNode)) selection.removeAllRanges();
+    };
+    doc.addEventListener('pointerdown', outside);
     doc.addEventListener('selectionchange', schedule);
     container.addEventListener('pointerup', schedule);
     container.addEventListener('scroll', close, { passive: true });
-    onCleanup(() => { ownerWindow.clearTimeout(timer); doc.removeEventListener('selectionchange', schedule); container.removeEventListener('pointerup', schedule); container.removeEventListener('scroll', close); close(); });
+    onCleanup(() => { ownerWindow.clearTimeout(timer); doc.removeEventListener('pointerdown', outside); doc.removeEventListener('selectionchange', schedule); container.removeEventListener('pointerup', schedule); container.removeEventListener('scroll', close); close(); });
   });
   return { showNotePopup: (note: NoteHighlightEntry, mark: HTMLElement) => {
     const container = containerRef(); if (!container) return; close();
     popup = container.createDiv(); popup.className = 'epub-note-popup'; popup.dataset.readerOverlay = 'true';
     const quote = popup.createEl('blockquote'); quote.textContent = note.selectedText;
-    const text = popup.createEl('p'); text.textContent = note.content || '已划线';
-    const dismiss = popup.createEl('button'); dismiss.textContent = '关闭'; dismiss.addEventListener('click', close);
+    if (note.content.trim()) {
+      const annotation = popup.createDiv({ cls: 'epub-annotation' });
+      annotation.createEl('p', { text: note.content });
+    }
     place(popup, mark.getBoundingClientRect(),container);
   } };
 }

@@ -1,3 +1,4 @@
+import type { BookNotesState } from './notes-view';
 import { FileView, WorkspaceLeaf, Notice, type ViewStateResult, type App, type TFile } from 'obsidian';
 import { parseLBP, serializeLBP, type LBPRange } from './lbp';
 import { ReaderContent } from './reader-component';
@@ -6,7 +7,7 @@ import { render } from 'solid-js/web';
 import { parseEpub } from './epub-parser';
 import { DEFAULT_SETTINGS, type ReaderSettings } from './settings';
 export const EPUB_VIEW_TYPE = 'epub-view';
-export interface ReaderPreferences { get: () => ReaderSettings; save: (settings: ReaderSettings) => Promise<void>; }
+export interface ReaderPreferences { get: () => ReaderSettings; save: (settings: ReaderSettings) => Promise<void>; openNotes?: (state: BookNotesState) => Promise<void>; }
 export class EpubView extends FileView {
   private store?: ReaderStore;
   private disposeReader?: () => void;
@@ -32,7 +33,7 @@ export class EpubView extends FileView {
     this.requestedPosition = position && position.bookId === value.file ? position : null;
     // FileView owns file assignment and calls onLoadFile/onUnloadFile.
     await super.setState(value, result);
-    if (this.requestedPosition && this.store?.state.bookId === value.file) this.store?.navigateToLBP(this.requestedPosition);
+    if (this.requestedPosition && this.store && this.store.state.bookId === value.file && serializeLBP(this.store.state.currentLBP) !== serializeLBP(this.requestedPosition)) this.store.jump({ chapter: this.requestedPosition.start.spineIndex, lbp: this.requestedPosition });
     this.requestedPosition = null;
   }
   async onLoadFile(file: TFile): Promise<void> {
@@ -53,7 +54,10 @@ export class EpubView extends FileView {
       this.store = store;
       this.contentEl.empty();
       const container = this.contentEl.createDiv({ cls: 'epub-solid-reader' });
-      this.disposeReader = render(() => ReaderContent({ store, app: this.app, file }), container);
+      this.disposeReader = render(() => ReaderContent({ store, app: this.app, file, onOpenNotes: () => {
+        void this.preferences.openNotes?.({ book: file.path, title: parsed.publication.metadata.title || file.basename,
+          chapters: parsed.publication.readingOrder.items.map((item,index) => item.title || '第 ' + (index + 1) + ' 章') }).catch(error => { console.error(error); new Notice('无法打开读书笔记'); });
+      } }), container);
     } catch (error) {
       if (version !== this.loadVersion || this.closed) return;
       console.error('EPUB load failed', error);
@@ -72,7 +76,7 @@ export class EpubView extends FileView {
   }
 }
 export async function openEpubInView(app: App, filePath: string, position: LBPRange): Promise<void> {
-  const leaf = app.workspace.getLeaf(true);
+  const leaf = app.workspace.getLeavesOfType(EPUB_VIEW_TYPE).find(leaf => leaf.view instanceof EpubView && leaf.view.file?.path === filePath) ?? app.workspace.getLeaf(true);
   await leaf.setViewState({ type: EPUB_VIEW_TYPE, state: { file: filePath, lbp: serializeLBP(position) } });
   await app.workspace.revealLeaf(leaf);
 }
