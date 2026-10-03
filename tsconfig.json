@@ -21,10 +21,10 @@
 		"jsxImportSource": "solid-js",
 		"lib": [
 			"DOM",
-			"ES5",
-			"ES6",
-			"ES7"
-		]
+			"DOM.Iterable",
+			"ES2022"
+		],
+		"skipLibCheck": true
 	},
 	"include": [
 		"src/**/*.ts",

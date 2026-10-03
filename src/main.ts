@@ -61,7 +61,6 @@ export default class EpubReaderPlugin extends Plugin {
 		}
 
 		const files = epubFiles.map(f => ({ path: f.path, name: f.name }));
-		// eslint-disable-next-line @typescript-eslint/no-misused-promises
 		new EpubFileSelectorModal(this.app, files, async (filePath) => {
 			const leaf = this.app.workspace.getLeaf(true);
 			const file = this.app.vault.getAbstractFileByPath(filePath);
@@ -110,9 +109,9 @@ export default class EpubReaderPlugin extends Plugin {
  */
 class EpubFileSelectorModal extends Modal {
 	private files: Array<{ path: string; name: string }>;
-	private onSelect: (filePath: string) => void;
+	private onSelect: (filePath: string) => Promise<void>;
 
-	constructor(app: App, files: Array<{ path: string; name: string }>, onSelect: (filePath: string) => void) {
+	constructor(app: App, files: Array<{ path: string; name: string }>, onSelect: (filePath: string) => Promise<void>) {
 		super(app);
 		this.files = files;
 		this.onSelect = onSelect;
@@ -130,8 +129,10 @@ class EpubFileSelectorModal extends Modal {
 			const fileItem = fileList.createDiv({ cls: 'epub-file-item' });
 			fileItem.createEl('span', { text: file.name });
 			fileItem.addEventListener('click', () => {
-				this.onSelect(file.path);
-				this.close();
+				void this.onSelect(file.path).then(() => this.close()).catch((error: unknown) => {
+					console.error('Failed to open EPUB', error);
+					new Notice('Failed to open epub file');
+				});
 			});
 		}
 	}
