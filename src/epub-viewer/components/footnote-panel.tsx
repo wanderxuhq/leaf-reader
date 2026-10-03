@@ -22,7 +22,7 @@ export function FootnotePanel(props: { note: Footnote; modal: boolean; reader: (
   });
   return <ReaderPanel title={t('footnote')} kind="footnote" modal={props.modal} style={props.modal ? undefined : position()} onClose={props.onClose}>
     <div class="epub-panel-scroll epub-footnote-content" innerHTML={props.note.html} onClick={event => {
-      const anchor = (event.target as Element).closest<HTMLAnchorElement>('a[data-epub-href]');
+      const anchor = event.target.closest<HTMLAnchorElement>('a[data-epub-href]');
       if (!anchor) return;
       event.preventDefault(); props.onNavigate(anchor.dataset.epubHref!); props.onClose();
     }} />

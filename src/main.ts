@@ -128,7 +128,7 @@ class EpubFileSelectorModal extends Modal {
 
 		for (const file of this.files) {
 			const fileItem = fileList.createDiv({ cls: 'epub-file-item' });
-			fileItem.createEl('span', { text: file.name });
+			fileItem.createSpan({ text: file.name });
 			fileItem.addEventListener('click', () => {
 				void this.onSelect(file.path).then(() => this.close()).catch((error: unknown) => {
 					console.error('Failed to open EPUB', error);
