@@ -1,3 +1,4 @@
+import { t } from '../i18n';
 import type { BookNotesState } from './notes-view';
 import { FileView, WorkspaceLeaf, Notice, type ViewStateResult, type App, type TFile } from 'obsidian';
 import { parseLBP, serializeLBP, type LBPRange } from './lbp';
@@ -40,30 +41,30 @@ export class EpubView extends FileView {
     const version = ++this.loadVersion;
     this.releaseReader();
     this.contentEl.empty();
-    this.contentEl.createDiv({ cls: 'epub-loading', text: '正在打开书籍…' });
+    this.contentEl.createDiv({ cls: 'epub-loading', text: t('openingBook') });
     const saved = parseLBP(this.app.loadLocalStorage('epub-lbp-' + file.path));
     const position = this.requestedPosition ?? saved;
     try {
       const parsed = await parseEpub(this.app, file.path);
       if (version !== this.loadVersion || this.closed) return;
-      if (!parsed.publication.readingOrder.items.length) throw new Error('书籍没有可阅读的章节');
+      if (!parsed.publication.readingOrder.items.length) throw new Error(t('noChapters'));
       this.loadedPath = file.path;
       const store = createReaderStore(parsed, file.path, this.preferences.get(), position,
         lbp => this.app.saveLocalStorage('epub-lbp-' + lbp.bookId, serializeLBP(lbp)),
-        settings => { void this.preferences.save(settings).catch(error => { console.error(error); new Notice('阅读设置保存失败'); }); });
+        settings => { void this.preferences.save(settings).catch(error => { console.error(error); new Notice(t('settingsSaveFailed')); }); });
       this.store = store;
       this.contentEl.empty();
       const container = this.contentEl.createDiv({ cls: 'epub-solid-reader' });
       this.disposeReader = render(() => ReaderContent({ store, app: this.app, file, onOpenNotes: () => {
         void this.preferences.openNotes?.({ book: file.path, title: parsed.publication.metadata.title || file.basename,
-          chapters: parsed.publication.readingOrder.items.map((item,index) => item.title || '第 ' + (index + 1) + ' 章') }).catch(error => { console.error(error); new Notice('无法打开读书笔记'); });
+          chapters: parsed.publication.readingOrder.items.map((item,index) => item.title || t('chapter', { number: index + 1 })) }).catch(error => { console.error(error); new Notice(t('openNotesFailed')); });
       } }), container);
     } catch (error) {
       if (version !== this.loadVersion || this.closed) return;
       console.error('EPUB load failed', error);
       this.contentEl.empty();
-      this.contentEl.createDiv({ cls: 'epub-error', text: '无法打开书籍：' + (error instanceof Error ? error.message : String(error)) });
-      const retry = this.contentEl.createEl('button', { text: '重试' });
+      this.contentEl.createDiv({ cls: 'epub-error', text: t('bookOpenFailed') });
+      const retry = this.contentEl.createEl('button', { text: t('retry') });
       this.registerDomEvent(retry, 'click', () => { void this.onLoadFile(file); });
     }
   }

@@ -1,3 +1,4 @@
+import { t } from '../i18n';
 /**
  * Search Component for EPUB Reader
  */
@@ -31,7 +32,8 @@ export function SearchInput(props: SearchInputProps) {
 				ref={inputRef}
 				type="text"
 				class="epub-toolbar-search-input"
-				placeholder={props.placeholder || 'Search...'}
+        aria-label={t('search')}
+				placeholder={props.placeholder || t('searchPlaceholder')}
 				value={props.value}
 				onInput={(e) => props.onInput(e.currentTarget.value)}
 				onKeyDown={(e) => props.onKeyDown(e)}

@@ -31,3 +31,5 @@ export class ItemView {
   registerEvent(ref: any) { this.refs.push(ref); }
   unload() { for (const ref of this.refs) this.app.vault.offref(ref); this.refs=[]; }
 }
+
+export const getLanguage = () => new URLSearchParams(window.location.search).get('lang') ?? 'en';

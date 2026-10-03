@@ -1,3 +1,4 @@
+import { t } from '../../i18n';
 import { createMemo, createSignal, For, Show, onMount, onCleanup } from 'solid-js';
 import type { Publication, Link } from '../types';
 import { sameResource } from '../epub-path';
@@ -23,7 +24,7 @@ function TocContents(props: ReaderSidebarProps) {
     const toc = props.publication?.toc?.items;
     const links = toc?.length ? toc : props.publication?.readingOrder.items ?? [];
     const tree = (items: readonly Link[], level = 0, prefix = ''): TocEntry[] => items.map((link, index) => ({
-      link: { ...link, title: link.title || '第 ' + (index + 1) + ' 节' }, key: prefix + index, level,
+      link: { ...link, title: link.title || t('section', { number: index + 1 }) }, key: prefix + index, level,
       children: tree(link.children?.items ?? [], level + 1, prefix + index + '-'),
     }));
     return tree(links);
@@ -46,7 +47,7 @@ function TocContents(props: ReaderSidebarProps) {
       <li class="epub-toc-branch">
         <div class="epub-toc-row" style={{ '--toc-depth': Math.min(branch.entry.level, 4) }}>
           <Show when={branch.entry.children.length} fallback={<span class="epub-toc-spacer" />}>
-            <IconButton name={expanded() ? 'chevron-down' : 'chevron-right'} ariaLabel={(expanded() ? '收起 ' : '展开 ') + branch.entry.link.title}
+            <IconButton name={expanded() ? 'chevron-down' : 'chevron-right'} ariaLabel={t(expanded() ? 'collapse' : 'expand', { title: branch.entry.link.title ?? '' })}
               expanded={expanded()} class="epub-toc-toggle" onClick={() => setCollapsed(value => !value)} disabled={!!filter()} />
           </Show>
           <button type="button" class="epub-toc-link" title={branch.entry.link.title} aria-current={activeKey() === branch.entry.key ? 'location' : undefined}
@@ -57,14 +58,14 @@ function TocContents(props: ReaderSidebarProps) {
     </Show>;
   }
   return <>
-    <div class="epub-toc-filter"><input type="search" aria-label="筛选目录" placeholder="查找章节…" value={query()} onInput={event => setQuery(event.currentTarget.value)} /></div>
+    <div class="epub-toc-filter"><input type="search" aria-label={t('filterToc')} placeholder={t('findChapter')} value={query()} onInput={event => setQuery(event.currentTarget.value)} /></div>
     <div ref={list} class="epub-panel-scroll epub-toc-scroll">
-      <nav aria-label="书籍目录"><ul class="epub-toc-tree"><For each={entries()}>{entry => <Branch entry={entry} />}</For></ul></nav>
-      <Show when={!entries().some(entry => matches(entry, filter()))}><p class="epub-panel-empty" role="status">没有匹配的章节</p></Show>
+      <nav aria-label={t('bookContents')}><ul class="epub-toc-tree"><For each={entries()}>{entry => <Branch entry={entry} />}</For></ul></nav>
+      <Show when={!entries().some(entry => matches(entry, filter()))}><p class="epub-panel-empty" role="status">{t('noChaptersMatch')}</p></Show>
     </div>
-    <footer class="epub-panel-footer"><span>当前章节</span><strong>{props.chapterIndex + 1} / {props.totalChapters}</strong></footer>
+    <footer class="epub-panel-footer"><span>{t('currentChapter')}</span><strong>{props.chapterIndex + 1} / {props.totalChapters}</strong></footer>
   </>;
 }
 export function ReaderSidebar(props: ReaderSidebarProps) {
-  return <Show when={props.isVisible}><ReaderPanel title="目录" subtitle={props.publication?.metadata.title} kind="toc" modal={props.modal} onClose={props.onClose}><TocContents {...props} /></ReaderPanel></Show>;
+  return <Show when={props.isVisible}><ReaderPanel title={t('toc')} subtitle={props.publication?.metadata.title} kind="toc" modal={props.modal} onClose={props.onClose}><TocContents {...props} /></ReaderPanel></Show>;
 }

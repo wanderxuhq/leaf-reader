@@ -1,3 +1,4 @@
+import { t } from '../i18n';
 import type { ParsedEpub } from './types';
 import { EpubResourceProcessor, type ProcessedChapter } from './epub-resource-processor';
 /** One resource owner per open book, with a bounded processing queue. */
@@ -22,13 +23,13 @@ export class ChapterLoader {
   }
   private pump(): void { while (this.active < 2 && this.queue.length) this.queue.shift()!(); }
   private async read(index: number): Promise<ProcessedChapter> {
-    if (this.disposed) throw new Error('Reader closed');
+    if (this.disposed) throw new Error(t('readerClosed'));
     const link = this.parsed.publication.readingOrder.items[index];
-    if (!link) throw new Error('Chapter not found');
+    if (!link) throw new Error(t('chapterNotFound'));
     const raw = await this.parsed.publication.get(link).readAsString();
-    if (raw === null) throw new Error('无法读取章节 ' + link.href);
+    if (raw === null) throw new Error(t('chapterLoadFailed'));
     const result = await this.processor.processChapter(raw,link.href);
-    if (this.disposed) throw new Error('Reader closed');
+    if (this.disposed) throw new Error(t('readerClosed'));
     return result;
   }
   dispose(): void { this.disposed = true; this.processor.cleanup(); this.cache.clear(); this.pump(); }

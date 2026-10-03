@@ -1,3 +1,4 @@
+import { t } from '../i18n';
 import { preferMarkdown, preferNotes } from './notes-view-mode';
 import { Component, FileView, MarkdownRenderer, Notice, type TAbstractFile, type ViewStateResult } from 'obsidian';
 import { noteTarget, type NoteRecord } from './note-repository';
@@ -19,7 +20,7 @@ export class BookNotesView extends FileView {
   private markdown?: Component;
   private closed = false;
   getViewType(): string { return NOTES_VIEW_TYPE; }
-  getDisplayText(): string { return this.file?.basename ?? '读书笔记'; }
+  getDisplayText(): string { return this.file?.basename ?? t('notes'); }
   getIcon(): string { return 'notebook-pen'; }
   // Enter only via an explicit view switch, never by opening an arbitrary .md.
   canAcceptExtension(): boolean { return false; }
@@ -56,9 +57,9 @@ export class BookNotesView extends FileView {
     this.markdown?.unload(); this.markdown = undefined;
     this.contentEl.empty();
     const heading = this.contentEl.createDiv({ cls: 'epub-notes-heading' });
-    heading.createEl('h2', { text: this.book.title || this.file?.basename || '读书笔记' });
-    heading.createEl('button', { text: 'Markdown', attr: { 'aria-label': '切换到 Markdown 编辑器' } }).addEventListener('click', () => { void this.editMarkdown(); });
-    const filter = this.contentEl.createEl('input', { type: 'search', placeholder: '搜索引文和笔记…', attr: { 'aria-label': '搜索读书笔记' } });
+    heading.createEl('h2', { text: this.book.title || this.file?.basename || t('notes') });
+    heading.createEl('button', { text: 'Markdown', attr: { 'aria-label': t('editMarkdown') } }).addEventListener('click', () => { void this.editMarkdown(); });
+    const filter = this.contentEl.createEl('input', { type: 'search', placeholder: t('notesPlaceholder'), attr: { 'aria-label': t('searchNotes') } });
     filter.value = this.query;
     filter.addEventListener('input', () => { this.query = filter.value; if (this.list) this.list.scrollTop = 0; this.renderEntries(); });
     this.list = this.contentEl.createDiv({ cls: 'epub-notes-list', attr: { 'aria-live': 'polite' } });
@@ -69,7 +70,7 @@ export class BookNotesView extends FileView {
       if (this.closed || this.file !== file) return;
       preferMarkdown(this.leaf, file.path);
       await this.leaf.setViewState({ type: 'markdown', state: { file: file.path, mode: 'source' }, active: true });
-    } catch (error) { preferNotes(this.leaf); console.error(error); new Notice('无法打开 Markdown'); }
+    } catch (error) { preferNotes(this.leaf); console.error(error); new Notice(t('openMarkdownFailed')); }
   }
   private async refresh(): Promise<void> {
     const version = ++this.generation, file = this.file;
@@ -84,13 +85,13 @@ export class BookNotesView extends FileView {
       // Keep the search field intact when Markdown content changes.
       if (!this.list?.isConnected) this.renderShell();
       const heading = this.contentEl.querySelector('h2'); if (heading) heading.textContent = this.book.title || file.basename;
-      if (!book) { this.list?.empty(); this.list?.createEl('p', { text: '这不是读书笔记文件，请使用 Markdown 编辑器打开。' }); return; }
+      if (!book) { this.list?.empty(); this.list?.createEl('p', { text: t('useMarkdown') }); return; }
       this.renderEntries(); if (this.list) this.list.scrollTop = scroll;
     } catch (error) {
       if (version !== this.generation || this.closed) return;
       console.error('Failed to read book notes', error); this.entries = [];
-      this.list?.empty(); this.list?.createEl('p', { text: '无法读取笔记。' });
-      this.list?.createEl('button', { text: '重试' }).addEventListener('click', () => { void this.refresh(); });
+      this.list?.empty(); this.list?.createEl('p', { text: t('readNotesFailed') });
+      this.list?.createEl('button', { text: t('retry') }).addEventListener('click', () => { void this.refresh(); });
     }
   }
   private renderEntries(): void {
@@ -101,17 +102,17 @@ export class BookNotesView extends FileView {
     const query = this.query.trim().toLocaleLowerCase();
     const entries = this.entries.filter(note => (note.selectedText + '\n' + note.content).toLocaleLowerCase().includes(query))
       .sort((a,b) => a.lbpRange.start.spineIndex - b.lbpRange.start.spineIndex);
-    if (!entries.length) { list.createEl('p', { cls: 'epub-panel-empty', text: query ? '没有匹配的笔记' : '选中文字，添加划线或笔记后会显示在这里。' }); return; }
+    if (!entries.length) { list.createEl('p', { cls: 'epub-panel-empty', text: query ? t('noNotesMatch') : t('notesEmpty') }); return; }
     let chapter = -1, section = list;
     for (const note of entries) {
       const index = note.lbpRange.start.spineIndex;
       if (index !== chapter) {
         chapter = index; section = list.createEl('section');
-        section.createEl('h3', { text: this.book.chapters[index] || '第 ' + (index + 1) + ' 章' });
+        section.createEl('h3', { text: this.book.chapters[index] || t('chapter', { number: index + 1 }) });
       }
       const entry = section.createEl('article', { cls: 'epub-notes-entry' });
-      const quote = entry.createEl('button', { cls: 'epub-notes-quote', text: note.selectedText || '返回原文', attr: { 'aria-label': '返回原文：' + note.selectedText } });
-      quote.addEventListener('click', () => { void openEpubInView(this.app, this.book.book, note.lbpRange).catch(error => { console.error(error); new Notice('无法打开原文'); }); });
+      const quote = entry.createEl('button', { cls: 'epub-notes-quote', text: note.selectedText || t('backToText'), attr: { 'aria-label': t('backToQuote', { quote: note.selectedText }) } });
+      quote.addEventListener('click', () => { void openEpubInView(this.app, this.book.book, note.lbpRange).catch(error => { console.error(error); new Notice(t('openTextFailed')); }); });
       if (note.content) {
         const annotation = entry.createDiv({ cls: 'epub-annotation' });
         const body = annotation.createDiv({ cls: 'epub-notes-content' });

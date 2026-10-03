@@ -1,10 +1,11 @@
+import { t } from '../i18n';
 import { preferNotes, staysInMarkdown } from './notes-view-mode';
 import { FileView, Notice, Platform, TFile, type App, type Plugin, type WorkspaceLeaf } from 'obsidian';
 import { NOTES_VIEW_TYPE, type BookNotesState } from './notes-view';
 import { findNoteFiles, noteTarget } from './note-repository';
 
 export async function openNotesFile(app: App, file: TFile, preferred?: WorkspaceLeaf, context?: BookNotesState): Promise<void> {
-  if (file.extension !== 'md' || !noteTarget(await app.vault.read(file))) { new Notice('这不是读书笔记文件'); return; }
+  if (file.extension !== 'md' || !noteTarget(await app.vault.read(file))) { new Notice(t('notNotesFile')); return; }
   const existing = app.workspace.getLeavesOfType(NOTES_VIEW_TYPE).find(leaf => leaf.view.getState().file === file.path);
   const leaf = preferred ?? existing ?? (Platform.isMobile ? app.workspace.getLeaf(true) : app.workspace.getRightLeaf(true) ?? app.workspace.getLeaf(true));
   preferNotes(leaf);
@@ -14,7 +15,7 @@ export async function openNotesFile(app: App, file: TFile, preferred?: Workspace
 
 export async function openBookNotes(app: App, state: BookNotesState): Promise<void> {
   const file = (await findNoteFiles(app, state.book))[0];
-  if (!file) { new Notice('还没有笔记，选中文字即可添加划线或笔记'); return; }
+  if (!file) { new Notice(t('noNotesYet')); return; }
   await openNotesFile(app, file, undefined, state);
 }
 
@@ -43,12 +44,12 @@ export function registerNotesOpening(plugin: Plugin): void {
   }));
   app.workspace.onLayoutReady(autoOpen);
   const eligible = (file: TFile | null): file is TFile => !!file && file.extension === 'md' && typeof app.metadataCache.getFileCache(file)?.frontmatter?.['epub-target'] === 'string';
-  const open = (file: TFile, leaf?: WorkspaceLeaf) => { void openNotesFile(app, file, leaf).catch(error => { console.error(error); new Notice('无法打开读书笔记'); }); };
+  const open = (file: TFile, leaf?: WorkspaceLeaf) => { void openNotesFile(app, file, leaf).catch(error => { console.error(error); new Notice(t('openNotesFailed')); }); };
   plugin.registerEvent(app.workspace.on('file-menu', (menu, file, _source, leaf) => {
     if (!(file instanceof TFile) || !eligible(file)) return;
-    menu.addItem(item => item.setTitle('Open as reading notes').setIcon('notebook-pen').onClick(() => open(file, leaf)));
+    menu.addItem(item => item.setTitle(t('openAsNotes')).setIcon('notebook-pen').onClick(() => open(file, leaf)));
   }));
-  plugin.addCommand({ id: 'open-reading-notes', name: 'Open as reading notes', checkCallback: checking => {
+  plugin.addCommand({ id: 'open-reading-notes', name: t('openAsNotes'), checkCallback: checking => {
     const view = app.workspace.getActiveViewOfType(FileView);
     if (!view || !eligible(view.file)) return false;
     if (!checking) open(view.file, view.leaf);

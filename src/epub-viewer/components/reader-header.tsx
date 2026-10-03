@@ -1,3 +1,4 @@
+import { t } from '../../i18n';
 import { HistoryControl } from './history-control';
 /**
  * Reader Header Component
@@ -56,7 +57,7 @@ export function ReaderHeader(props: ReaderHeaderProps) {
 			<div class="epub-header-left">
 				<IconButton
 					name="list"
-					ariaLabel="Toggle table of contents"
+					ariaLabel={t('tocToggle')}
           expanded={props.store.state.sidebarVisible}
 					onClick={() => props.store.toggleSidebar()}
 				/>
@@ -69,37 +70,37 @@ export function ReaderHeader(props: ReaderHeaderProps) {
 						onInput={(v) => props.store.setSearchQuery(v)}
 						onKeyDown={handleSearchKeyDown}
 						onClose={() => props.store.toggleSearch()}
-						placeholder="搜索书中文字…"
+						placeholder={t('searchPlaceholder')}
 					/>
 				</div>
 			) : (
 				<div class="epub-header-center">
 					<IconButton
 					name="chevron-left"
-					ariaLabel="Previous page"
+					ariaLabel={t('previousPage')}
 					onClick={() => props.onNavigatePrevious()}
 					class="epub-nav-btn-prev"
 				/>
-					<div class="epub-page-info" title="当前章节 / 总章节数" aria-label={'第 ' + displayPage() + ' 章，共 ' + totalPages() + ' 章'}>
+					<div class="epub-page-info" title={t('chapterCountTitle')} aria-label={t('chapterCount', { current: displayPage(), total: totalPages() })}>
 						<span class="epub-current-page">{displayPage()}</span>
 						<span class="epub-page-separator"> / </span>
 						<span class="epub-total-pages">{totalPages()}</span>
 					</div>
 					<IconButton
 					name="chevron-right"
-					ariaLabel="Next page"
+					ariaLabel={t('nextPage')}
 					onClick={() => props.onNavigateNext()}
 					class="epub-nav-btn-next"
 				/>
 				</div>
 			)}
 			<div class="epub-header-right">
-        <Show when={!props.store.state.searchVisible}><IconButton name="notebook-pen" ariaLabel="读书笔记" onClick={() => props.onOpenNotes?.()} /></Show>
+        <Show when={!props.store.state.searchVisible}><IconButton name="notebook-pen" ariaLabel={t('notes')} onClick={() => props.onOpenNotes?.()} /></Show>
 				{props.store.state.searchVisible && (
 					<>
 						<IconButton
 							name="chevron-up"
-							ariaLabel="Previous match"
+							ariaLabel={t('previousMatch')}
 							onClick={() => props.onSearchNavigate(Direction.Prev)}
 							class={props.store.state.searchResults.length === 0 ? 'is-disabled' : ''}
 							disabled={props.store.state.searchResults.length === 0}
@@ -109,7 +110,7 @@ export function ReaderHeader(props: ReaderHeaderProps) {
 						</div>
 						<IconButton
 							name="chevron-down"
-							ariaLabel="Next match"
+							ariaLabel={t('nextMatch')}
 							onClick={() => props.onSearchNavigate(Direction.Next)}
 							class={props.store.state.searchResults.length === 0 ? 'is-disabled' : ''}
 							disabled={props.store.state.searchResults.length === 0}
@@ -118,12 +119,12 @@ export function ReaderHeader(props: ReaderHeaderProps) {
 				)}
 				<IconButton
 					name={props.store.state.searchVisible ? "x" : "search"}
-					ariaLabel={props.store.state.searchVisible ? "Close search" : "Search"}
+					ariaLabel={props.store.state.searchVisible ? t('closeSearch') : t('search')}
 					onClick={() => props.store.toggleSearch()}
 				/>
 				<Show when={!props.store.state.searchVisible}><IconButton
 					name="settings"
-					ariaLabel="Settings"
+					ariaLabel={t('settings')}
           expanded={props.store.state.settingsVisible}
 					onClick={() => props.store.toggleSettings()}
 				/></Show>

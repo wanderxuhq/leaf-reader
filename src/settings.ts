@@ -1,3 +1,4 @@
+import { t } from './i18n';
 import {App, PluginSettingTab, Setting, type SettingDefinitionItem} from "obsidian";
 import type EpubReaderPlugin from "./main";
 import { ViewMode } from "./epub-viewer/types";
@@ -14,11 +15,11 @@ export class EpubSettingTab extends PluginSettingTab {
 	}
 
 	getSettingDefinitions(): SettingDefinitionItem[] {
-		return [{ type: 'group', heading: 'Reading', items: [{
-			name: 'Default reading mode',
-			desc: 'Read one chapter at a time or scroll continuously',
+		return [{ type: 'group', heading: t('reading'), items: [{
+			name: t('defaultReadingMode'),
+			desc: t('readingModeDescription'),
 			control: { type: 'dropdown', key: 'viewMode', defaultValue: ViewMode.SCROLL,
-				options: { [ViewMode.PAGINATED]: 'Single chapter', [ViewMode.SCROLL]: 'Continuous scroll' } },
+				options: { [ViewMode.PAGINATED]: t('singleChapter'), [ViewMode.SCROLL]: t('continuousScroll') } },
 		}] }];
 	}
 
@@ -34,14 +35,14 @@ export class EpubSettingTab extends PluginSettingTab {
 
 		containerEl.empty();
 
-		new Setting(containerEl).setName('Reading').setHeading();
+		new Setting(containerEl).setName(t('reading')).setHeading();
 
 		new Setting(containerEl)
-			.setName('Default reading mode')
-			.setDesc('Read one chapter at a time or scroll continuously')
+			.setName(t('defaultReadingMode'))
+			.setDesc(t('readingModeDescription'))
 			.addDropdown(dropdown => dropdown
-				.addOption(ViewMode.PAGINATED, 'Single chapter')
-				.addOption(ViewMode.SCROLL, 'Continuous scroll')
+				.addOption(ViewMode.PAGINATED, t('singleChapter'))
+				.addOption(ViewMode.SCROLL, t('continuousScroll'))
 				.setValue(this.plugin.settings.viewMode)
 				.onChange(value => this.setControlValue('viewMode', value)));
 

@@ -1,3 +1,4 @@
+import { t } from '../../i18n';
 import { createEffect, onCleanup, type Accessor } from 'solid-js';
 import { Notice, type App, type TFile } from 'obsidian';
 import { handleAddNote, saveHighlight } from '../note-manager';
@@ -43,8 +44,8 @@ export function useSelection(app: App, file: TFile, containerRef: Accessor<HTMLE
         el.addEventListener('pointerdown', event => event.preventDefault());
         el.addEventListener('click', event => { event.stopPropagation(); action(); close(); });
       };
-      button('划线', () => { void saveHighlight(app,file.path,text,serialized).then(refetchNotes).catch(error => { console.error(error); new Notice('划线保存失败'); }); });
-      button('笔记', () => handleAddNote(app,file.path,text,serialized,refetchNotes));
+      button(t('highlight'), () => { void saveHighlight(app,file.path,text,serialized).then(refetchNotes).catch(error => { console.error(error); new Notice(t('saveHighlightFailed')); }); });
+      button(t('addNote'), () => handleAddNote(app,file.path,text,serialized,refetchNotes));
       place(toolbar, rect, container);
     };
     const schedule = (event: Event) => {

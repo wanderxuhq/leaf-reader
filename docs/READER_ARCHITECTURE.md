@@ -34,3 +34,7 @@ npm test 使用合成 EPUB 在真实浏览器中贯通核心流程。测试替�
 ## LBP 坐标
 
 BookID::SpineIndex@ElementPath#CharOffset：仓库内完整书籍路径、spine 索引、正文元素索引路径、UTF-16 字符偏移。范围用起止坐标表示。空元素路径指向章节正文根节点。
+
+## Localization
+
+`src/i18n.ts` uses Obsidian's `getLanguage()` API (available since 1.8.7) and a typed English, Simplified Chinese, and Traditional Chinese catalog. Unsupported languages fall back to English. Add UI copy to the catalog, including accessible labels and notices; keep book content, Markdown properties, command IDs, and stored locations independent of translations. No translation service or runtime dependency is used.

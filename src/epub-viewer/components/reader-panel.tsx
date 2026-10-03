@@ -1,3 +1,4 @@
+import { t } from '../../i18n';
 import { Show, createUniqueId, createEffect, onMount, onCleanup, type JSX } from 'solid-js';
 import { IconButton } from './icon-button';
 
@@ -33,7 +34,7 @@ export function ReaderPanel(props: { title: string; subtitle?: string; kind: 'to
     <section ref={panel} class={'epub-reader-panel epub-reader-panel-' + props.kind} style={props.style} role="dialog" aria-modal={props.modal ? true : undefined} aria-labelledby={titleId} onKeyDown={keydown}>
       <header class="epub-panel-heading">
         <div><h2 id={titleId}>{props.title}</h2><Show when={props.subtitle}><p>{props.subtitle}</p></Show></div>
-        <IconButton name="x" ariaLabel={'关闭' + props.title} class="epub-panel-close" onClick={props.onClose} />
+        <IconButton name="x" ariaLabel={t('closePanel', { title: props.title })} class="epub-panel-close" onClick={props.onClose} />
       </header>
       {props.children}
     </section>

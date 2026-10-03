@@ -1,3 +1,4 @@
+import { t } from '../../i18n';
 import { createEffect, createResource, createSignal, onCleanup, onMount, Show } from 'solid-js';
 import type { ReaderStore } from '../epub-store';
 import type { ChapterLoader } from '../chapter-loader';
@@ -12,7 +13,7 @@ export function ChapterContent(props: { index: number; store: ReaderStore; loade
   const [content, { refetch }] = createResource(active, async enabled => {
     if (!enabled) return null;
     try { return { chapter: await props.loader.load(props.index), error: '' }; }
-    catch (error) { return { chapter: null, error: error instanceof Error ? error.message : String(error) }; }
+    catch (error) { console.error('Chapter load failed', error); return { chapter: null, error: t('chapterLoadFailed') }; }
   });
   onMount(() => {
     const observer = new IntersectionObserver(entries => { if (entries.some(e => e.isIntersecting)) setVisible(true); },
@@ -24,8 +25,8 @@ export function ChapterContent(props: { index: number; store: ReaderStore; loade
   return <div ref={wrapper} id={id} class="epub-chapter-wrapper" data-chapter-index={props.index}
     data-load-state={content.loading ? 'loading' : content()?.error ? 'error' : content()?.chapter ? 'ready' : 'idle'}>
     <Show when={content()?.chapter} fallback={<div class="epub-chapter-loading">
-      {content()?.error || '加载章节…'}
-      <Show when={content()?.error}><button onClick={() => void refetch()}>重试</button></Show>
+      {content()?.error || t('chapterLoading')}
+      <Show when={content()?.error}><button onClick={() => void refetch()}>{t('retry')}</button></Show>
     </div>}>
       {chapter => <>
         <style>{scopeChapterStyles(chapter().styles, '#' + id)}</style>

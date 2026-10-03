@@ -1,3 +1,4 @@
+import * as i18n from '../src/i18n';
 import { captureReadingPosition } from '../src/epub-viewer/position';
 import { BookNotesView, NOTES_VIEW_TYPE } from '../src/epub-viewer/notes-view';
 import { openBookNotes, openNotesFile, registerNotesOpening } from '../src/epub-viewer/notes-opening';
@@ -83,7 +84,7 @@ app.workspace = {
 };
 const emit = (name: string, ...args: any[]) => { for (const listener of listeners.get(name) ?? []) listener(...args); };
 async function open(position?:string) { view=new EpubView({app} as any,{get:()=>preferences,save:async value=>{preferences=value;},openNotes:state=>openBookNotes(app,state)}); await view.onOpen(); await view.setState({file:book.path,lbp:position},{} as any); }
-(window as any).readerTest={openNotesFile,registerNotesOpening,captureReadingPosition,openBookNotes,noteLeaves,openedMarkdown,emit,Platform,FootnoteLoader,createRoot,useSelection,useSearchHighlight,open, close:()=>view.onClose(), get view(){return view;},get store(){return (view as any).store;},app,book,text,storage,notices,lbp,notes,saveNote,loadNotes,performSearch,textRange,ViewMode,EpubResourceProcessor};
+(window as any).readerTest={i18n,openNotesFile,registerNotesOpening,captureReadingPosition,openBookNotes,noteLeaves,openedMarkdown,emit,Platform,FootnoteLoader,createRoot,useSelection,useSearchHighlight,open, close:()=>view.onClose(), get view(){return view;},get store(){return (view as any).store;},app,book,text,storage,notices,lbp,notes,saveNote,loadNotes,performSearch,textRange,ViewMode,EpubResourceProcessor};
 
 (window as any).readerTest.openReal = async (bytes: number[], name: string) => {
   await view.onClose(); archive = new Uint8Array(bytes).buffer; book = new TFile(name); files.set(name,book);

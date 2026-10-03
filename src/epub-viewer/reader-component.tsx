@@ -1,3 +1,4 @@
+import { t } from '../i18n';
 import { FootnotePanel } from './components/footnote-panel';
 import type { Footnote } from './footnotes';
 import { createSignal, createEffect, Show, onMount, onCleanup } from 'solid-js';
@@ -35,7 +36,7 @@ export function ReaderContent(props: ReaderComponentProps) {
       if (cancelled()) return;
       store.setSearchResults(results);
     } catch (error) {
-      if (!cancelled()) { const message = error instanceof Error ? error.message : '搜索失败'; setSearchError(message); new Notice(message); }
+      if (!cancelled()) { console.error('Search failed', error); const message = t('searchFailed'); setSearchError(message); new Notice(message); }
     } finally { if (!disposed && version === searchVersion) store.setSearchBusy(false); }
   };
   const changeSetting = <K extends keyof typeof store.state.settings>(key: K,value: typeof store.state.settings[K]) => store.setSettings({ ...store.state.settings, [key]: value });
@@ -45,7 +46,7 @@ export function ReaderContent(props: ReaderComponentProps) {
       onSearchNavigate={direction => { const total = store.state.searchResults.length; if (total) { const current = store.state.currentSearchIndex; focusMatch(current < 0 ? direction === Direction.Next ? 0 : total - 1 : (current + (direction === Direction.Next ? 1 : -1) + total) % total); } }}
       onNavigatePrevious={() => store.turnPage(-1)}
       onNavigateNext={() => store.turnPage(1)} />
-    {store.state.searchBusy && <div class="epub-status" role="status">正在搜索…</div>}
+    {store.state.searchBusy && <div class="epub-status" role="status">{t('searching')}</div>}
     {searchError() && <div class="epub-error" role="alert">{searchError()}</div>}
     <div class="epub-main">
       <ChapterList onFootnote={setFootnote} store={store} app={props.app} file={props.file} />

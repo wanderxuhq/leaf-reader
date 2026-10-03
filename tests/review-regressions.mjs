@@ -93,7 +93,7 @@ export async function reviewRegressions(browser, url) {
       getSelection().removeAllRanges(); getSelection().addRange(candidate);
       return { text: getSelection().toString(), bottom: candidate.getBoundingClientRect().bottom };
     });
-    await page.getByRole('button', { name: '划线', exact: true }).waitFor();
+    await page.getByRole('button', { name: 'Highlight', exact: true }).waitFor();
     const placement = await page.evaluate(() => {
       const toolbar = document.querySelector('.global-note-button-container').getBoundingClientRect();
       const viewport = document.querySelector('.epub-reading-viewport').getBoundingClientRect();
@@ -106,7 +106,7 @@ export async function reviewRegressions(browser, url) {
     await page.waitForTimeout(180);
     assert.equal(await page.locator('.global-note-button-container').count(), 0);
     await page.evaluate(() => { getSelection().removeAllRanges(); getSelection().addRange(readerTest.dismissRange); });
-    await page.getByRole('button', { name: '划线', exact: true }).click();
+    await page.getByRole('button', { name: 'Highlight', exact: true }).click();
     await page.waitForFunction(() => readerTest.text.size > 0);
     assert.equal(await page.evaluate(async () => (await readerTest.loadNotes(readerTest.app, readerTest.book.path))[0].selectedText), selection.text);
     console.log('PASS: bottom-of-viewport selection toolbar stays visible and saves the selected text');
@@ -144,7 +144,7 @@ export async function reviewRegressions(browser, url) {
     await page.evaluate(() => readerTest.store.navigateToChapter(1));
     await page.locator('[data-chapter-index="1"][data-load-state="error"]').waitFor();
     await page.evaluate(() => readerTest.restoreFetcher());
-    await page.getByRole('button', { name: '重试', exact: true }).click();
+    await page.getByRole('button', { name: 'Retry', exact: true }).click();
     await page.locator('.epub-chapter-body[data-spine="1"]').waitFor();
     await page.waitForTimeout(180);
     assert.equal(await page.evaluate(() => readerTest.store.state.currentLBP.start.spineIndex), 1);

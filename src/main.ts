@@ -1,3 +1,4 @@
+import { t } from './i18n';
 import { BookNotesView, NOTES_VIEW_TYPE } from './epub-viewer/notes-view';
 import { openBookNotes, registerNotesOpening } from './epub-viewer/notes-opening';
 import { normalizeSettings } from './epub-viewer/settings';
@@ -23,7 +24,7 @@ export default class EpubReaderPlugin extends Plugin {
 
 		this.addCommand({
 			id: 'open-epub',
-			name: 'Open epub file',
+			name: t('openEpub'),
 			callback: () => {
 				void this.openEpubFile();
 			},
@@ -52,7 +53,7 @@ export default class EpubReaderPlugin extends Plugin {
 		const epubFiles = this.app.vault.getFiles().filter(file => file.extension === 'epub');
 
 		if (epubFiles.length === 0) {
-			new Notice('No epub files found in vault');
+			new Notice(t('noEpub'));
 			return;
 		}
 
@@ -79,27 +80,27 @@ export default class EpubReaderPlugin extends Plugin {
 		try {
 			const lbpData = params.data;
 			if (!lbpData) {
-				new Notice('Invalid epub-ref link: missing data parameter');
+				new Notice(t('invalidLink'));
 				return;
 			}
 
 			const lbpRange = parseLBP(lbpData);
 			if (!lbpRange) {
-				new Notice('Invalid lbp format');
+				new Notice(t('invalidLink'));
 				return;
 			}
 
 			const filePath = lbpRange.bookId;
 			const epubFile = this.app.vault.getAbstractFileByPath(filePath);
 			if (!epubFile || !(epubFile instanceof TFile)) {
-				new Notice(`Epub file not found: ${filePath}`);
+				new Notice(t('bookNotFound', { path: filePath }));
 				return;
 			}
 
 			await openEpubInView(this.app, filePath, lbpRange);
 		} catch (error) {
 			console.error('[EpubPlugin] Error handling epub-ref link:', error);
-			new Notice('Failed to open epub link');
+			new Notice(t('openLinkFailed'));
 		}
 	}
 }
@@ -121,7 +122,7 @@ class EpubFileSelectorModal extends Modal {
 		const { contentEl } = this;
 		contentEl.empty();
 
-		contentEl.createEl('h2', { text: 'Select epub file' });
+		contentEl.createEl('h2', { text: t('selectEpub') });
 
 		const fileList = contentEl.createDiv({ cls: 'epub-file-list' });
 
@@ -131,7 +132,7 @@ class EpubFileSelectorModal extends Modal {
 			fileItem.addEventListener('click', () => {
 				void this.onSelect(file.path).then(() => this.close()).catch((error: unknown) => {
 					console.error('Failed to open EPUB', error);
-					new Notice('Failed to open epub file');
+					new Notice(t('bookOpenFailed'));
 				});
 			});
 		}

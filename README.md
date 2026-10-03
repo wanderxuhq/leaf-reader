@@ -11,6 +11,7 @@ An EPUB reader that turns highlights and annotations into linked Markdown notes.
 - Return to previous passages after jumps and preview EPUB footnotes in place.
 - Resume your reading position and restore annotations when reopening a book.
 - Desktop sidebars and compact panels for mobile and split views. No cloud services or telemetry.
+- English, Simplified Chinese, and Traditional Chinese, following Obsidian's language setting. Other languages use English.
 
 ## Use
 

@@ -1,3 +1,4 @@
+import { t } from '../../i18n';
 import { createSignal, onMount, onCleanup } from 'solid-js';
 import type { Footnote } from '../footnotes';
 import { ReaderPanel } from './reader-panel';
@@ -19,7 +20,7 @@ export function FootnotePanel(props: { note: Footnote; modal: boolean; reader: (
     reader.addEventListener('scroll', scroll, true);
     onCleanup(() => { ownerWindow.removeEventListener('resize', place); reader.removeEventListener('scroll', scroll, true); });
   });
-  return <ReaderPanel title="脚注" kind="footnote" modal={props.modal} style={props.modal ? undefined : position()} onClose={props.onClose}>
+  return <ReaderPanel title={t('footnote')} kind="footnote" modal={props.modal} style={props.modal ? undefined : position()} onClose={props.onClose}>
     <div class="epub-panel-scroll epub-footnote-content" innerHTML={props.note.html} onClick={event => {
       const anchor = (event.target as Element).closest<HTMLAnchorElement>('a[data-epub-href]');
       if (!anchor) return;

@@ -8,8 +8,8 @@ export async function readingTools(browser, url) {
     await page.addStyleTag({ content: 'body{font-family:system-ui,sans-serif;--background-secondary:#f3f2ef;--background-modifier-border:#dedcd7;--background-modifier-hover:#eeebf8;--text-muted:#706c78;--text-accent:#7154b8;--interactive-accent:#7154b8}button,input{font:inherit}' });
     await page.locator('.epub-chapter-body').waitFor();
     await page.waitForTimeout(180);
-    assert.equal(await page.getByRole('button', { name: '后退', exact: true }).isDisabled(), true);
-    assert.equal(await page.getByRole('button', { name: '前进', exact: true }).isDisabled(), true);
+    assert.equal(await page.getByRole('button', { name: 'Back', exact: true }).isDisabled(), true);
+    assert.equal(await page.getByRole('button', { name: 'Forward', exact: true }).isDisabled(), true);
     const original = await page.evaluate(() => {
       const t = readerTest, viewport = document.querySelector('.epub-reading-viewport');
       viewport.scrollTop = 450;
@@ -18,10 +18,10 @@ export async function readingTools(browser, url) {
       return position;
     });
     await page.locator('.epub-chapter-body[data-spine="1"]').waitFor(); await page.waitForTimeout(120);
-    await page.getByRole('button', { name: '后退', exact: true }).click();
+    await page.getByRole('button', { name: 'Back', exact: true }).click();
     await page.locator('.epub-chapter-body[data-spine="0"]').waitFor(); await page.waitForTimeout(120);
     assert.deepEqual(await page.evaluate(() => readerTest.store.state.navigation.lbp), original);
-    await page.getByRole('button', { name: '前进', exact: true }).click();
+    await page.getByRole('button', { name: 'Forward', exact: true }).click();
     await page.locator('.epub-chapter-body[data-spine="1"]').waitFor();
     const count = await page.evaluate(() => readerTest.store.state.historyBack.length);
     await page.getByRole('button', { name: 'Next page', exact: true }).click();
@@ -48,7 +48,7 @@ export async function readingTools(browser, url) {
     await page.locator('#foot-ref').waitFor(); await page.locator('#foot-ref').scrollIntoViewIfNeeded();
     const beforeNote = await page.evaluate(() => ({ scroll: document.querySelector('.epub-reading-viewport').scrollTop, history: readerTest.store.state.historyBack.length }));
     await page.locator('#foot-ref').click();
-    const dialog = page.getByRole('dialog', { name: '脚注', exact: true }); await dialog.waitFor();
+    const dialog = page.getByRole('dialog', { name: 'Footnote', exact: true }); await dialog.waitFor();
     assert.match(await dialog.innerText(), /Footnote explanation/);
     assert.equal(await dialog.locator('script,[style*="fixed"]').count(), 0);
     assert.equal(await page.evaluate(() => readerTest.store.state.historyBack.length), beforeNote.history);
@@ -64,13 +64,13 @@ export async function readingTools(browser, url) {
       await t.saveNote(t.app, t.book.path, { timestamp: '', selectedText: 'Book one quote', content: 'My first thought', lbp: t.lbp.serializeLBP(t.lbp.chapterPoint(t.book.path,0)) });
       await t.saveNote(t.app, 'Books/other.epub', { timestamp: '', selectedText: 'Other book quote', content: 'Other thought', lbp: t.lbp.serializeLBP(t.lbp.chapterPoint('Books/other.epub',0)) });
     });
-    await page.getByRole('button', { name: '读书笔记', exact: true }).click();
+    await page.getByRole('button', { name: 'Reading notes', exact: true }).click();
     assert.equal(await page.evaluate(() => readerTest.noteLeaves[0].view.getState().file), 'Books/test.notes.md');
     const notes = page.locator('.epub-notes-view'); await notes.waitFor();
     await page.getByText('My first thought', { exact: true }).waitFor();
     assert.equal(await notes.getByText('Other book quote').count(), 0);
     assert.equal(await notes.locator('.epub-notes-entry button').count(), 1);
-    await notes.getByRole('button', { name: '切换到 Markdown 编辑器', exact: true }).click();
+    await notes.getByRole('button', { name: 'Switch to Markdown editor', exact: true }).click();
     assert.equal(await page.evaluate(() => readerTest.openedMarkdown[0]), 'Books/test.notes.md');
     assert.equal(await notes.count(), 0);
     await page.evaluate(async () => { const t=readerTest; await t.openNotesFile(t.app,t.app.vault.getAbstractFileByPath('Books/test.notes.md'),t.noteLeaves[0]); });
@@ -80,10 +80,10 @@ export async function readingTools(browser, url) {
     await notes.getByRole('searchbox').fill('missing');
     assert.equal(await notes.locator('.epub-notes-entry').count(), 0);
     await notes.getByRole('searchbox').fill('Book one');
-    await notes.getByRole('button', { name: '返回原文：Book one quote', exact: true }).click();
+    await notes.getByRole('button', { name: 'Return to text: Book one quote', exact: true }).click();
     await page.locator('.epub-chapter-body[data-spine="0"]').waitFor();
     assert.equal(await page.evaluate(() => readerTest.app.workspace.lastRevealed === readerTest.view.leaf), true);
-    await page.getByRole('button', { name: '读书笔记', exact: true }).click();
+    await page.getByRole('button', { name: 'Reading notes', exact: true }).click();
     assert.equal(await notes.count(), 1);
     await page.evaluate(async () => { readerTest.Platform.isMobile = true; await readerTest.openBookNotes(readerTest.app,{ book:'Books/other.epub',title:'Other book',chapters:['Opening'] }); });
     assert.equal(await notes.count(), 2);
@@ -91,7 +91,7 @@ export async function readingTools(browser, url) {
     assert.doesNotMatch(await notes.nth(1).innerText(), /Book one quote/);
     await notes.first().screenshot({ path: 'tests/output/reading-notes.png' });
     await page.evaluate(() => { const t=readerTest, path='Books/other.notes.md'; t.text.set(path,'---\nepub-target: \"Books/other.epub\"\n---\n'); t.emit('modify',t.app.vault.getAbstractFileByPath(path)); });
-    await notes.nth(1).getByText('选中文字，添加划线或笔记后会显示在这里。', {exact:true}).waitFor();
+    await notes.nth(1).getByText('Highlights and notes will appear here after you add them.', {exact:true}).waitFor();
     assert.equal(await notes.first().locator('.epub-notes-entry').count(), 1);
     const staleMetadata = await page.evaluate(async () => {
       const t = readerTest, path = 'Books/test.notes.md', original = t.text.get(path), getCache = t.app.metadataCache.getFileCache;
@@ -123,7 +123,7 @@ export async function readingTools(browser, url) {
       await t.autoLeaf.setViewState({type:'markdown',state:{file:'Books/test.notes.md'}});
     });
     await page.waitForFunction(() => readerTest.autoLeaf.view.getViewType()==='leaf-reader-notes');
-    await page.evaluate(() => readerTest.autoLeaf.contentEl.querySelector('[aria-label="切换到 Markdown 编辑器"]').click());
+    await page.evaluate(() => readerTest.autoLeaf.contentEl.querySelector('[aria-label="Switch to Markdown editor"]').click());
     await page.waitForFunction(() => readerTest.autoLeaf.view.getViewType()==='markdown');
     await page.evaluate(() => { const t=readerTest; t.emit('active-leaf-change',t.autoLeaf);t.emit('changed',t.autoLeaf.view.file); });
     await page.waitForTimeout(180);
@@ -155,12 +155,12 @@ export async function readingTools(browser, url) {
     const bounds = await dialog.evaluate(el => { const a=el.getBoundingClientRect(),b=document.querySelector('.epub-view-container').getBoundingClientRect();return a.left>=b.left&&a.right<=b.right+1&&a.bottom<=b.bottom+1; });
     assert.equal(bounds, true);
     await page.screenshot({ path: 'tests/output/mobile-footnote.png' });
-    await page.getByRole('button', { name: '关闭脚注', exact: true }).click();
+    await page.getByRole('button', { name: 'Close Footnote', exact: true }).click();
     const navigation = await page.evaluate(() => readerTest.store.state.navigation.id);
-    await page.getByRole('button', { name: '后退', exact: true }).click();
+    await page.getByRole('button', { name: 'Back', exact: true }).click();
     await page.waitForTimeout(120);
     assert.ok(await page.evaluate(() => readerTest.store.state.navigation.id) > navigation);
-    await page.getByRole('button', { name: '前进', exact: true }).click();
+    await page.getByRole('button', { name: 'Forward', exact: true }).click();
     await page.locator('.epub-chapter-body[data-spine="0"]').waitFor();
     await page.screenshot({ path: 'tests/output/mobile-history.png' });
     assert.deepEqual(errors, []);
