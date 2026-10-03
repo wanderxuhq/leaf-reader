@@ -1,7 +1,7 @@
 {
   "id": "leaf-reader",
   "name": "Leaf Reader",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "minAppVersion": "1.8.7",
   "description": "An EPUB reader that turns highlights and annotations into linked Markdown notes.",
   "author": "wanderxuhq",

@@ -10,6 +10,31 @@ export async function reviewRegressions(browser, url) {
     await page.goto(url);
     await page.locator('.epub-chapter-body').waitFor();
     await page.waitForTimeout(180);
+    const scheduling = await page.evaluate(() => {
+      const frame = document.createElement('iframe'); document.body.append(frame);
+      const owner = frame.contentWindow, doc = frame.contentDocument;
+      const container = document.createElement('div'); doc.body.append(container);
+      const counts = { frames: 0, timers: 0, cancelledFrames: 0, cancelledTimers: 0 };
+      owner.requestAnimationFrame = () => { counts.frames++; return 71; };
+      owner.cancelAnimationFrame = id => { if (id === 71) counts.cancelledFrames++; };
+      owner.setTimeout = () => { counts.timers++; return 72; };
+      owner.clearTimeout = id => { if (id === 72) counts.cancelledTimers++; };
+      let dispose;
+      readerTest.createRoot(cleanup => {
+        dispose = cleanup;
+        readerTest.useSearchHighlight(() => container, readerTest.store, () => 0);
+        readerTest.useSelection(readerTest.app, readerTest.book, () => container, () => {});
+      });
+      container.dispatchEvent(new owner.Event('pointerup'));
+      dispose();
+      // Disposed effects must also remove the owning document's event listeners.
+      container.dispatchEvent(new owner.Event('pointerup'));
+      doc.dispatchEvent(new owner.Event('selectionchange'));
+      frame.remove();
+      return counts;
+    });
+    assert.deepEqual(scheduling, { frames: 1, timers: 1, cancelledFrames: 1, cancelledTimers: 1 });
+    console.log('PASS: secondary-window animation/timers use their owner and clean up on disposal');
     const resources = await page.evaluate(async () => {
       const png = document.createElement('canvas').toDataURL('image/png');
       const zip = { hasFile: path => path === 'OPS/Images/sprite.svg',

@@ -93,13 +93,14 @@ export class EpubResourceProcessor {
     }
     doc.querySelectorAll('link').forEach(el => el.remove());
     // Keep body classes and direct text in an addressable content element.
-    const body = doc.createElement('div');
+    const children = Array.from(doc.body.childNodes);
+    const body = doc.body.createDiv();
     body.className = 'epub-book-body ' + doc.body.className;
-    body.append(...Array.from(doc.body.childNodes));
+    body.append(...children);
     if (doc.body.id) body.id = doc.body.id;
     if (doc.body.getAttribute('dir')) body.setAttribute('dir', doc.body.getAttribute('dir')!);
     const inject = (parent: Element) => Array.from(parent.children).forEach((child, index) => { child.setAttribute('data-lidx', String(index)); inject(child); });
-    const wrapper = doc.createElement('div'); wrapper.append(body); inject(wrapper);
+    const wrapper = doc.body.createDiv(); wrapper.append(body); inject(wrapper);
     return { html: wrapper.innerHTML, styles };
   }
   cleanup(): void { this.disposed = true; for (const url of this.created) URL.revokeObjectURL(url); this.created.clear(); this.urls.clear(); }

@@ -35,8 +35,9 @@ function TocContents(props: ReaderSidebarProps) {
   });
   let list!: HTMLDivElement;
   onMount(() => {
-    const frame = requestAnimationFrame(() => list.querySelector('[aria-current="location"]')?.scrollIntoView({ block: 'nearest' }));
-    onCleanup(() => cancelAnimationFrame(frame));
+    const ownerWindow = list.ownerDocument.defaultView ?? window;
+    const frame = ownerWindow.requestAnimationFrame(() => list.querySelector('[aria-current="location"]')?.scrollIntoView({ block: 'nearest' }));
+    onCleanup(() => ownerWindow.cancelAnimationFrame(frame));
   });
   function Branch(branch: { entry: TocEntry }) {
     const [collapsed, setCollapsed] = createSignal(false);

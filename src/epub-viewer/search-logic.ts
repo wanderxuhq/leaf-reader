@@ -1,7 +1,7 @@
 import type { Publication } from './types';
 import { chapterDocument } from './epub-resource-processor';
 export interface SearchMatch { id: string; chapterIndex: number; chapterTitle: string; previewText: string; charOffset: number; length: number; }
-export async function performSearch(publication: Publication, query: string, cancelled: () => boolean = () => false): Promise<SearchMatch[]> {
+export async function performSearch(publication: Publication, query: string, cancelled: () => boolean = () => false, ownerWindow: Window = window): Promise<SearchMatch[]> {
   if (!query.trim()) return [];
   const results: SearchMatch[] = [];
   const escaped = query.split('').map(char => '\\u' + char.charCodeAt(0).toString(16).padStart(4, '0')).join('');
@@ -18,7 +18,7 @@ export async function performSearch(publication: Publication, query: string, can
       results.push({ id: chapterIndex + '-' + offset, chapterIndex, chapterTitle: link.title ?? 'Chapter ' + (chapterIndex+1),
         charOffset: offset, length: match[0].length, previewText: text.slice(Math.max(0,offset-40),offset+match[0].length+40) });
     }
-    await new Promise(resolve => setTimeout(resolve, 0));
+    await new Promise(resolve => ownerWindow.setTimeout(resolve, 0));
   }
   return cancelled() ? [] : results;
 }

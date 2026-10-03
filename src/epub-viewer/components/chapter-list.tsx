@@ -19,7 +19,7 @@ export function ChapterList(props: ChapterListProps) {
   const [container,setContainer] = createSignal<HTMLDivElement>();
   const [revision,setRevision] = createSignal(0);
   const ready = () => setRevision(value => value+1);
-  const { notes, refetchNotes } = useNotes(props.app, () => props.file.path);
+  const { notes, refetchNotes } = useNotes(props.app, () => props.file.path, container);
   const { showNotePopup } = useSelection(props.app,props.file,container,refetchNotes);
   const decorations = createMemo(() => [revision(),store.state.settings.fontSize,store.state.settings.lineHeight,store.state.settings.fontFamily]);
   useHighlights(() => notes() ?? [],container,showNotePopup,decorations);
@@ -28,10 +28,11 @@ export function ChapterList(props: ChapterListProps) {
   useScrollTracker(container,store,navigating);
   createEffect(() => {
     const el = container(); if (!el) return;
+    const ownerWindow = el.ownerDocument.defaultView ?? window;
     let frame = 0, disposed = false, previousWidth = el.clientWidth, previousHeight = el.clientHeight;
     const restore = () => {
-      cancelAnimationFrame(frame);
-      frame = requestAnimationFrame(() => { if (!disposed && !navigating()) store.navigateToLBP(store.state.currentLBP); });
+      ownerWindow.cancelAnimationFrame(frame);
+      frame = ownerWindow.requestAnimationFrame(() => { if (!disposed && !navigating()) store.navigateToLBP(store.state.currentLBP); });
     };
     const resize = new ResizeObserver(() => {
       if (el.clientWidth !== previousWidth || el.clientHeight !== previousHeight) {
@@ -42,7 +43,7 @@ export function ChapterList(props: ChapterListProps) {
     const assetLoaded = (event: Event) => { if ((event.target as Element).matches?.('img, image, video')) restore(); };
     el.addEventListener('load', assetLoaded, true);
     void el.ownerDocument.fonts.ready.then(() => { if (!disposed) restore(); });
-    onCleanup(() => { disposed = true; cancelAnimationFrame(frame); resize.disconnect(); el.removeEventListener('load', assetLoaded, true); });
+    onCleanup(() => { disposed = true; ownerWindow.cancelAnimationFrame(frame); resize.disconnect(); el.removeEventListener('load', assetLoaded, true); });
   });
   createEffect(() => {
     const request = store.state.pageRequest;

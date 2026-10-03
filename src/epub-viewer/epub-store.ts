@@ -11,10 +11,11 @@ export function createReaderStore(parsed: ParsedEpub, bookId: string, settings: 
   onPosition: (position: LBPRange) => void, onSettings: (settings: ReaderSettings) => void) {
   const count = parsed.publication.readingOrder.items.length;
   const initial = position?.bookId === bookId && position.end.spineIndex < count ? position : chapterPoint(bookId, 0);
+  const navigation: Navigation = { id: 1, chapter: initial.start.spineIndex, lbp: initial };
   const [state, set] = createStore({
     ...parsed, bookId, totalChapters: count, chapterIndex: initial.start.spineIndex, displayChapterIndex: initial.start.spineIndex,
     settings: normalizeSettings(settings), currentLBP: initial,
-    navigation: { id: 1, chapter: initial.start.spineIndex, lbp: initial } as Navigation,
+    navigation,
     immersive: false, sidebarVisible: false, settingsVisible: false, searchVisible: false,
     searchQuery: '', searchResults: [] as SearchMatch[], currentSearchIndex: -1, searchBusy: false, pageRequest: { id: 0, direction: 1 },
   });

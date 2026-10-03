@@ -2,7 +2,7 @@
  * Icon Button Component - wraps Obsidian setIcon for SolidJS
  */
 
-import { onMount, createEffect } from 'solid-js';
+import { createEffect } from 'solid-js';
 import { setIcon } from 'obsidian';
 
 export interface IconButtonProps {
@@ -18,23 +18,9 @@ export interface IconButtonProps {
 export function IconButton(props: IconButtonProps) {
 	let btnRef: HTMLButtonElement | undefined;
 
-	const applyIcon = () => {
-		if (btnRef && btnRef.isConnected) {
-			requestAnimationFrame(() => {
-				if (btnRef && btnRef.isConnected) {
-					setIcon(btnRef, props.name);
-				}
-			});
-		}
-	};
-
-	onMount(() => {
-		applyIcon();
-	});
-
 	createEffect(() => {
-		void props.name;
-		applyIcon();
+		const name = props.name;
+		if (btnRef) setIcon(btnRef, name);
 	});
 
 	return (

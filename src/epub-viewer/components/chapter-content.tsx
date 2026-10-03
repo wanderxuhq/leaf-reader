@@ -20,7 +20,7 @@ export function ChapterContent(props: { index: number; store: ReaderStore; loade
     observer.observe(wrapper); onCleanup(() => observer.disconnect());
     const resize = new ResizeObserver(() => props.ready()); resize.observe(wrapper); onCleanup(() => resize.disconnect());
   });
-  createEffect(() => { content(); void content.loading; const frame = requestAnimationFrame(props.ready); onCleanup(() => cancelAnimationFrame(frame)); });
+  createEffect(() => { content(); void content.loading; const ownerWindow = wrapper.ownerDocument.defaultView ?? window; const frame = ownerWindow.requestAnimationFrame(props.ready); onCleanup(() => ownerWindow.cancelAnimationFrame(frame)); });
   return <div ref={wrapper} id={id} class="epub-chapter-wrapper" data-chapter-index={props.index}
     data-load-state={content.loading ? 'loading' : content()?.error ? 'error' : content()?.chapter ? 'ready' : 'idle'}>
     <Show when={content()?.chapter} fallback={<div class="epub-chapter-loading">

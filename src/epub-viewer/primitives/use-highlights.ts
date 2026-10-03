@@ -6,25 +6,25 @@ export function useHighlights(notes: Accessor<NoteHighlightEntry[]>, containerRe
   createEffect(() => {
     const container = containerRef(), entries = notes(); contentReady?.();
     if (!container) return;
-    const frame = requestAnimationFrame(() => {
+    const ownerWindow = container.ownerDocument.defaultView ?? window;
+    const frame = ownerWindow.requestAnimationFrame(() => {
       container.querySelectorAll('.epub-note-highlight-container').forEach(el => el.remove());
       for (const root of Array.from(container.querySelectorAll<HTMLElement>('.epub-chapter-body'))) {
         const chapter = Number(root.dataset.spine), wrapper = root.parentElement!;
-        const layer = root.ownerDocument.createElement('div'); layer.className = 'epub-note-highlight-container'; layer.dataset.readerOverlay = 'true';
+        const layer = wrapper.createDiv(); layer.className = 'epub-note-highlight-container'; layer.dataset.readerOverlay = 'true';
         const origin = wrapper.getBoundingClientRect();
         for (const note of entries) {
           if (!note.lbpRange) continue;
           const range = LBPResolver.rangeInChapter(root, chapter, note.lbpRange); if (!range || range.collapsed) continue;
           for (const rect of Array.from(range.getClientRects())) {
             if (!rect.width || !rect.height) continue;
-            const mark = root.ownerDocument.createElement('div'); mark.className = 'epub-note-highlight'; mark.dataset.noteId = note.id;
+            const mark = layer.createDiv(); mark.className = 'epub-note-highlight'; mark.dataset.noteId = note.id;
             Object.assign(mark.style, { left: (rect.left-origin.left)+'px', top: (rect.top-origin.top)+'px', width: rect.width+'px', height: rect.height+'px' });
-            mark.addEventListener('click', event => { event.stopPropagation(); onNoteClick(note, mark); }); layer.append(mark);
+            mark.addEventListener('click', event => { event.stopPropagation(); onNoteClick(note, mark); });
           }
         }
-        wrapper.append(layer);
       }
     });
-    onCleanup(() => cancelAnimationFrame(frame));
+    onCleanup(() => ownerWindow.cancelAnimationFrame(frame));
   });
 }

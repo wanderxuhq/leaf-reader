@@ -9,7 +9,8 @@ export function useNavigation(containerRef: Accessor<HTMLElement | undefined>, s
     const target = store.state.navigation, container = containerRef(); ready();
     if (!container || applied === target.id) return;
     pending = true;
-    const frame = requestAnimationFrame(() => {
+    const ownerWindow = container.ownerDocument.defaultView ?? window;
+    const frame = ownerWindow.requestAnimationFrame(() => {
       const root = container.querySelector<HTMLElement>('.epub-chapter-body[data-spine="' + target.chapter + '"]');
       if (!root) {
         // A failed chapter is terminal for this attempt, but retry may still produce a root.
@@ -41,7 +42,7 @@ export function useNavigation(containerRef: Accessor<HTMLElement | undefined>, s
       container.scrollTop += target.align === 'end' ? root.getBoundingClientRect().bottom - container.getBoundingClientRect().bottom : rect.top - container.getBoundingClientRect().top - 8;
       applied = target.id; pending = false; store.updatePosition(target.align === 'end' ? captureReadingPosition(container, store.state.bookId) ?? point : point);
     });
-    onCleanup(() => cancelAnimationFrame(frame));
+    onCleanup(() => ownerWindow.cancelAnimationFrame(frame));
   });
   return () => pending;
 }

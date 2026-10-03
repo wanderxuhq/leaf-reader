@@ -27,7 +27,7 @@ export function ReaderContent(props: ReaderComponentProps) {
     const cancelled = () => disposed || version !== searchVersion || query !== store.state.searchQuery;
     store.clearSearch(); setSearchError(''); store.setSearchBusy(true);
     try {
-      const results = await performSearch(store.state.publication,query,cancelled);
+      const results = await performSearch(store.state.publication,query,cancelled,reader.ownerDocument.defaultView ?? window);
       if (cancelled()) return;
       store.setSearchResults(results); if (results.length) focusMatch(0);
     } catch (error) {

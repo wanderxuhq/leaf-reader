@@ -1,3 +1,6 @@
+import { createRoot } from 'solid-js';
+import { useSelection } from '../src/epub-viewer/primitives/use-selection';
+import { useSearchHighlight } from '../src/epub-viewer/primitives/use-search-highlight';
 
 import { zipSync, strToU8 } from 'fflate';
 import { EpubView } from '../src/epub-viewer/epub-view';
@@ -13,7 +16,7 @@ import { EpubResourceProcessor } from '../src/epub-viewer/epub-resource-processo
 // Only the DOM conveniences normally installed by Obsidian are mocked.
 Object.assign(HTMLElement.prototype, {
   empty() { this.replaceChildren(); }, addClass(name: string) { this.classList.add(name); },
-  createEl(tag: string, opts: any={}) { const el=document.createElement(tag); if(opts.cls) el.className=opts.cls; if(opts.text) el.textContent=opts.text; for(const [k,v] of Object.entries(opts.attr??{})) el.setAttribute(k,String(v)); this.append(el); return el; },
+  createEl(tag: string, opts: any={}) { const el=this.ownerDocument.createElement(tag); if(opts.cls) el.className=opts.cls; if(opts.text) el.textContent=opts.text; for(const [k,v] of Object.entries(opts.attr??{})) el.setAttribute(k,String(v)); this.append(el); return el; },
   createDiv(opts: any={}) { return this.createEl('div',opts); },
 });
 const xml = (body:string) => '<html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" href="../Styles/book.css"/></head><body>'+body+'</body></html>';
@@ -43,7 +46,7 @@ const app:any = { vault: { ...events, getAbstractFileByPath:(path:string)=>files
 let preferences={...DEFAULT_SETTINGS, viewMode:ViewMode.PAGINATED, renderAheadCount:0};
 let view:EpubView;
 async function open(position?:string) { view=new EpubView({app} as any,{get:()=>preferences,save:async value=>{preferences=value;}}); await view.onOpen(); await view.setState({file:book.path,lbp:position},{} as any); }
-(window as any).readerTest={open, close:()=>view.onClose(), get view(){return view;},get store(){return (view as any).store;},app,book,text,storage,notices,lbp,notes,saveNote,loadNotes,performSearch,textRange,ViewMode,EpubResourceProcessor};
+(window as any).readerTest={createRoot,useSelection,useSearchHighlight,open, close:()=>view.onClose(), get view(){return view;},get store(){return (view as any).store;},app,book,text,storage,notices,lbp,notes,saveNote,loadNotes,performSearch,textRange,ViewMode,EpubResourceProcessor};
 
 (window as any).readerTest.openReal = async (bytes: number[], name: string) => {
   await view.onClose(); archive = new Uint8Array(bytes).buffer; book = new TFile(name); files.set(name,book);

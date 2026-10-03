@@ -27,7 +27,8 @@ export function useSelection(app: App, file: TFile, containerRef: Accessor<HTMLE
   createEffect(() => {
     const container = containerRef(); if (!container) return;
     const doc = container.ownerDocument;
-    let timer: ReturnType<typeof setTimeout> | undefined;
+    const ownerWindow = doc.defaultView ?? window;
+    let timer: number | undefined;
     const inspect = () => {
       const selection = doc.getSelection();
       if (!selection || selection.isCollapsed || !selection.rangeCount) { toolbar?.remove(); toolbar = undefined; return; }
@@ -35,28 +36,28 @@ export function useSelection(app: App, file: TFile, containerRef: Accessor<HTMLE
       const lbp = rangeFromSelection(file.path, range, container); if (!lbp) { close(); return; }
       const text = selection.toString(); if (!text.trim()) return;
       const serialized = serializeLBP(lbp), rect = range.getBoundingClientRect();
-      close(); toolbar = doc.createElement('div'); toolbar.className = 'global-note-button-container'; toolbar.dataset.readerOverlay = 'true';
+      close(); toolbar = container.createDiv(); toolbar.className = 'global-note-button-container'; toolbar.dataset.readerOverlay = 'true';
       const button = (label: string, action: () => void) => {
-        const el = doc.createElement('button'); el.textContent = label;
+        const el = toolbar!.createEl('button'); el.textContent = label;
         el.addEventListener('pointerdown', event => event.preventDefault());
-        el.addEventListener('click', event => { event.stopPropagation(); action(); close(); }); toolbar!.append(el);
+        el.addEventListener('click', event => { event.stopPropagation(); action(); close(); });
       };
       button('划线', () => { void saveHighlight(app,file.path,text,serialized).then(refetchNotes).catch(error => { console.error(error); new Notice('划线保存失败'); }); });
       button('笔记', () => handleAddNote(app,file.path,text,serialized,refetchNotes));
       place(toolbar, rect, container);
     };
-    const schedule = () => { clearTimeout(timer); timer = setTimeout(inspect, 80); };
+    const schedule = () => { ownerWindow.clearTimeout(timer); timer = ownerWindow.setTimeout(inspect, 80); };
     doc.addEventListener('selectionchange', schedule);
     container.addEventListener('pointerup', schedule);
     container.addEventListener('scroll', close, { passive: true });
-    onCleanup(() => { clearTimeout(timer); doc.removeEventListener('selectionchange', schedule); container.removeEventListener('pointerup', schedule); container.removeEventListener('scroll', close); close(); });
+    onCleanup(() => { ownerWindow.clearTimeout(timer); doc.removeEventListener('selectionchange', schedule); container.removeEventListener('pointerup', schedule); container.removeEventListener('scroll', close); close(); });
   });
   return { showNotePopup: (note: NoteHighlightEntry, mark: HTMLElement) => {
     const container = containerRef(); if (!container) return; close();
-    popup = container.ownerDocument.createElement('div'); popup.className = 'epub-note-popup'; popup.dataset.readerOverlay = 'true';
-    const quote = container.ownerDocument.createElement('blockquote'); quote.textContent = note.selectedText; popup.append(quote);
-    const text = container.ownerDocument.createElement('p'); text.textContent = note.content || '已划线'; popup.append(text);
-    const dismiss = container.ownerDocument.createElement('button'); dismiss.textContent = '关闭'; dismiss.addEventListener('click', close); popup.append(dismiss);
+    popup = container.createDiv(); popup.className = 'epub-note-popup'; popup.dataset.readerOverlay = 'true';
+    const quote = popup.createEl('blockquote'); quote.textContent = note.selectedText;
+    const text = popup.createEl('p'); text.textContent = note.content || '已划线';
+    const dismiss = popup.createEl('button'); dismiss.textContent = '关闭'; dismiss.addEventListener('click', close);
     place(popup, mark.getBoundingClientRect(),container);
   } };
 }
